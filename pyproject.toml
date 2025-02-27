@@ -100,3 +100,6 @@ strict_equality = true
 module = ["tests.*"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
