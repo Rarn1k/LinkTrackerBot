@@ -2,10 +2,7 @@ from telethon.events import NewMessage
 
 __all__ = ("unknown_command_handler",)
 
-from src.handlers.utils.registration_required import require_registration
 
-
-@require_registration
 async def unknown_command_handler(
     event: NewMessage.Event,
 ) -> None:

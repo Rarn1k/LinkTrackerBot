@@ -11,13 +11,11 @@ from src.handlers.track import track_handler
 from src.handlers.unknown import unknown_command_handler
 from src.handlers.untrack import untrack_handler
 from src.handlers.utils.enum_commands import BotCommand
-from src.settings import TGBotSettings
+from src.settings import settings
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
-
-settings = TGBotSettings()  # type: ignore[call-arg]
 
 
 def main() -> None:
@@ -46,7 +44,7 @@ def main() -> None:
     }
 
     for command, handler in command_handlers.items():
-        client.add_event_handler(handler, events.NewMessage(pattern=command))
+        client.add_event_handler(handler, events.NewMessage(pattern=rf"^{command}"))
 
     excluded_commands = "|".join(cmd.name.lower() for cmd in BotCommand)
     client.add_event_handler(

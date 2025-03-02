@@ -1,36 +1,29 @@
+import httpx
 from telethon.events import NewMessage
 
 from src.bd.memory_storage.enum_states import State
 from src.bd.memory_storage.key_builder import build_storage_key
 from src.bd.memory_storage.memory import MemoryStorage
-from src.bd.repository import Repository, Subscription
-from src.handlers.utils.registration_required import require_registration
+from src.settings import settings
 
 __all__ = ("msg_handler",)
+
 
 EXPECTED_TRACK_PARTS: int = 2
 
 
-@require_registration
-async def msg_handler(
-    event: NewMessage.Event,
-) -> None:
-    """Обрабатывает входящие сообщения, связанные c машиной состояний (FSM) для команды /track.
-    Декоратор @require_registration обеспечивает выполнение только для зарегистрированных
-    пользователей.
+async def msg_handler(event: NewMessage.Event) -> None:
+    """Обрабатывает входящие сообщения, связанные c диалогом добавления подписки.
 
-    B зависимости от текущего состояния (FSM), функция:
-      - Если состояние равно State.WAITING_FOR_TAGS, интерпретирует сообщение как список тегов,
-        сохраняет их в хранилище, переводит FSM в состояние State.WAITING_FOR_FILTERS и
-        запрашивает фильтры.
-      - Если состояние равно State.WAITING_FOR_FILTERS, интерпретирует сообщение как фильтры,
-        сохраняет их в хранилище, создаёт подписку и добавляет её в репозиторий.
-      - Если состояние равно None, игнорирует сообщение.
+    B зависимости от состояния FSM:
+      - Если состояние WAITING_FOR_TAGS: сообщение интерпретируется как список тегов, данные
+        обновляются, состояние переводится в WAITING_FOR_FILTERS и запрашиваются фильтры.
+      - Если состояние WAITING_FOR_FILTERS: сообщение интерпретируется как фильтры, после
+        чего данные отправляются в сервис scrapper через HTTP-запрос для добавления подписки,
+        и FSM сбрасывается.
+      - Если состояние None: сообщение игнорируется.
 
-    Если сообщение начинается c символа '/', обработчик игнорирует это сообщение, так как
-    такие команды обрабатываются другими обработчиками.
-
-    :param event: Событие Telethon c типом NewMessage.Event, содержащее входящее сообщение.
+    :param event: Событие Telegram c текстом сообщения.
     :return: None
     """
     if event.raw_text.startswith("/"):
@@ -52,22 +45,37 @@ async def msg_handler(
 
     elif current_state == State.WAITING_FOR_FILTERS:
         filters_input = event.raw_text.split()
-        filters = {}
-        for f in filters_input:
-            if ":" in f:
-                key_val = f.split(":", 1)
-                if len(key_val) == EXPECTED_TRACK_PARTS:
-                    filters[key_val[0]] = key_val[1]
+
         data = await memory_storage.get_data(key)
-        data["filters"] = filters
+        data["filters"] = filters_input
         await memory_storage.set_data(key, data)
 
         url = data.get("url")
         tags = data.get("tags", [])
-        subscription = Subscription(url=url, tags=tags, filters=filters)
-        repository = Repository()
-        if await repository.add_subscription(event.sender_id, subscription):
-            await event.respond(f"Ссылка {url} добавлена для отслеживания.")
-        else:
-            await event.respond(f"Ссылка {url} уже отслеживается.")
+
+        payload = {
+            "link": url,
+            "tags": tags,
+            "filters": filters_input,
+        }
+        headers = {"Tg-Chat-Id": str(event.chat_id)}
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{settings.scrapper_api_url}/links",
+                    json=payload,
+                    headers=headers,
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 422:  # type: ignore[attr-defined] # noqa: PLR2004
+                    await event.respond("Введён некорректный формат ссылки")
+                else:
+                    await event.respond(
+                        f"Ошибка при добавлении подписки: {e.response.json().get("detail")!s}.\n"
+                        f"Для корректной работы данной команды необходимо сначала "
+                        f"зарегистрировать чат с помощью команды /start.",
+                    )
+                return
+        await event.respond(f"Ссылка {url} добавлена для отслеживания.")
         await memory_storage.clear(key)

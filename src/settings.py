@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-__all__ = ("TGBotSettings",)
+__all__ = ("TGBotSettings", "settings")
 
 
 class TGBotSettings(BaseSettings):
@@ -13,6 +13,7 @@ class TGBotSettings(BaseSettings):
     api_id: int = Field(...)
     api_hash: str = Field(...)
     token: str = Field(...)
+    scrapper_api_url: str = "http://localhost:7777/api/v1/scrapper"
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",
@@ -21,3 +22,6 @@ class TGBotSettings(BaseSettings):
         env_file=Path(__file__).parent.parent / ".env",
         env_prefix="BOT_",
     )
+
+
+settings = TGBotSettings()  # type: ignore[call-arg]

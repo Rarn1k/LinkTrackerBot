@@ -2,10 +2,7 @@ from telethon.events import NewMessage
 
 __all__ = ("help_handler",)
 
-from src.handlers.utils.registration_required import require_registration
 
-
-@require_registration
 async def help_handler(
     event: NewMessage.Event,
 ) -> None:
@@ -20,7 +17,7 @@ async def help_handler(
     """
     help_text = (
         "Доступные команды:\n"
-        "/start - регистрация пользователя\n"
+        "/start - начало работы бота\n"
         "/help - помощь\n"
         "/track <url> - начать отслеживание ссылки\n"
         "/untrack <url> - прекратить отслеживание ссылки\n"

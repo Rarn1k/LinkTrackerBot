@@ -1,86 +1,97 @@
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
+from src.api.scrapper_api.models import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.singleton import SingletonMeta
 
 
-@dataclass
-class Subscription:
-    """Класс для представления подписки пользователя."""
-
-    url: str
-    tags: List[str] = field(default_factory=list)
-    filters: Dict[str, str] = field(default_factory=dict)
-    last_updated: Optional[str] = None
-
-
 class Repository(metaclass=SingletonMeta):
-    """Репозиторий подписок в памяти c асинхронными методами.
+    """Репозиторий для хранения информации o Telegram-чатах и отслеживаемых ссылках.
 
-    Этот класс обеспечивает управление пользователями и их подписками, используя словарь в памяти.
-    Реализован как синглтон для единственного экземпляра в приложении.
+    - chats: словарь, где ключ - идентификатор чата, значение - булево (флаг регистрации)
+    - links: словарь, где ключ - идентификатор чата, значение - список объектов LinkResponse
+    - _link_id_counter: внутренний счётчик для генерации уникальных идентификаторов ссылок.
     """
 
     def __init__(self) -> None:
-        """Инициализирует репозиторий c пустым словарем пользователей."""
-        self.users: Dict[int, List[Subscription]] = {}
+        """Инициализирует репозиторий c пустым словарем чатов и пустым словарём ссылок."""
+        self.chats: Dict[int, bool] = {}
+        self.links: Dict[int, List[LinkResponse]] = {}
+        self._link_id_counter: int = 1
 
-    async def add_user(self, user_id: int) -> bool:
-        """Добавляет нового пользователя user_id в репозиторий.
+    async def register_chat(self, chat_id: int) -> None:
+        """Регистрирует чат по заданному идентификатору.
 
-        :param user_id: Идентификатор пользователя (int).
-        :return: True, если пользователь успешно добавлен, False, если он уже существует.
+        :param chat_id: Идентификатор чата.
         """
-        if user_id not in self.users:
-            self.users[user_id] = []
-            return True
-        return False
+        if chat_id < 0:
+            raise ValueError(f"Некорректный идентификатор чата: {chat_id}. Должен быть >= 0.")
+        self.chats[chat_id] = True
+        if chat_id not in self.links:
+            self.links[chat_id] = []
 
-    async def add_subscription(self, user_id: int, subscription: Subscription) -> bool:
-        """Добавляет подписку subscription для пользователя user_id.
+    async def delete_chat(self, chat_id: int) -> None:
+        """Удаляет чат и связанные c ним ссылки.
 
-        :param user_id: Идентификатор пользователя (int).
-        :param subscription: Объект подписки (Subscription), содержащий URL и другие данные.
-        :return: True, если подписка успешно добавлена, False, если пользователь не существует
-        или подписка уже есть.
+        :param chat_id: Идентификатор чата.
+        :raises HTTPException: Если чат не зарегистрирован.
         """
-        user_data = self.users.get(user_id)
-        if user_data is None:
-            return False
-        if any(s.url == subscription.url for s in user_data):
-            return False
-        user_data.append(subscription)
-        return True
+        if chat_id < 0:
+            raise ValueError(f"Некорректный идентификатор чата: {chat_id}. Должен быть >= 0.")
+        if chat_id not in self.chats:
+            raise KeyError(f"Чат с идентификатором {chat_id} не найден.")
+        del self.chats[chat_id]
+        if chat_id in self.links:
+            del self.links[chat_id]
 
-    async def remove_subscription(self, user_id: int, url: str) -> None:
-        """Удаляет подписку пользователя по URL, если она существует.
+    async def add_link(self, chat_id: int, add_req: AddLinkRequest) -> LinkResponse:
+        """Добавляет новую отслеживаемую ссылку для заданного чата.
 
-        :param user_id: Идентификатор пользователя (int).
-        :param url: URL подписки для удаления (str).
+        :param chat_id: Идентификатор чата.
+        :param add_req: Объект запроса для добавления ссылки.
+        :return: Объект LinkResponse c данными добавленной ссылки.
+        :raises HTTPException: Если чат не зарегистрирован или ссылка уже добавлена.
         """
-        user_data = self.users.get(user_id)
-        if user_data is None:
-            return
-        for sub in user_data:
-            if sub.url == url:
-                self.users[user_id].remove(sub)
+        if chat_id not in self.chats:
+            raise KeyError(f"Чат с идентификатором {chat_id} не найден.")
+        existing_links = self.links.get(chat_id, [])
+        for link in existing_links:
+            if link.url == add_req.link:
+                raise ValueError("Ссылка уже отслеживается")
+        new_link = LinkResponse(
+            id=self._link_id_counter,
+            url=add_req.link,
+            tags=add_req.tags,
+            filters=add_req.filters,
+            last_updated=None,
+        )
+        self._link_id_counter += 1
+        existing_links.append(new_link)
+        self.links[chat_id] = existing_links
+        return new_link
 
-    async def get_subscriptions(self, user_id: int) -> List[Subscription]:
-        """Возвращает список подписок пользователя user_id.
+    async def remove_link(self, chat_id: int, remove_req: RemoveLinkRequest) -> LinkResponse:
+        """Убирает отслеживание ссылки для заданного чата.
 
-        :param user_id: Идентификатор пользователя (int).
-        :return: Список подписок (list[Subscription]), пустой список, если пользователя нет.
+        :param chat_id: Идентификатор чата.
+        :param remove_req: Объект запроса для удаления ссылки.
+        :return: Объект LinkResponse удалённой ссылки.
+        :raises HTTPException: Если чат не зарегистрирован или ссылка не найдена.
         """
-        return self.users.get(user_id, [])
+        if chat_id not in self.chats:
+            raise KeyError(f"Чат с идентификатором {chat_id} не найден.")
+        existing_links = self.links.get(chat_id, [])
+        for link in existing_links:
+            if link.url == remove_req.link:
+                existing_links.remove(link)
+                return link
+        raise ValueError(f"Ссылка {remove_req.link} не найдена.")
 
-    async def is_user_have_url(self, user_id: int, url: str) -> bool:
-        """Проверяет, есть ли y пользователя user_id подписка c указанным URL.
+    async def get_links(self, chat_id: int) -> List[LinkResponse]:
+        """Возвращает список отслеживаемых ссылок для заданного чата.
 
-        :param user_id: Идентификатор пользователя (int).
-        :param url: URL для проверки (str).
-        :return: True, если подписка существует, False, если нет или пользователь не найден.
+        :param chat_id: Идентификатор чата.
+        :return: Список объектов LinkResponse.
         """
-        user_data = self.users.get(user_id)
-        if user_data is None:
-            return False
-        return any(sub.url == url for sub in user_data)
+        if chat_id < 0:
+            raise ValueError(f"Некорректный идентификатор чата: {chat_id}. Должен быть >= 0.")
+        return self.links.get(chat_id, [])

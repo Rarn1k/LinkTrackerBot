@@ -1,24 +1,22 @@
+import json
+
+import httpx
 from telethon.events import NewMessage
 
-from src.bd.repository import Repository
-from src.handlers.utils.registration_required import require_registration
-
 __all__ = ("untrack_handler",)
+
+from src.settings import settings
 
 EXPECTED_TRACK_PARTS: int = 2
 
 
-@require_registration
-async def untrack_handler(
-    event: NewMessage.Event,
-) -> None:
-    """Обработчик команды для прекращения отслеживания ссылки в Telegram-боте.
+async def untrack_handler(event: NewMessage.Event) -> None:
+    """Обработчик команды /untrack для прекращения отслеживания ссылки.
 
-    Проверяет формат команды, извлекает URL из сообщения и удаляет подписку пользователя на этот
-    URL, если она существует. Если пользователь не зарегистрирован, декоратор @require_registration
-    отправляет сообщение o необходимости регистрации.
+    Если формат команды корректный (два элемента: команда и URL), отправляет HTTP-запрос
+    в scrapper-сервис, который удаляет подписку. Если подписка не найдена, уведомляет пользователя.
 
-    :param event: Событие сообщения Telegram, содержащее текст команды и информацию o пользователе.
+    :param event: Событие Telegram c текстом команды.
     :return: None
     """
     message_text = event.message.message
@@ -27,15 +25,27 @@ async def untrack_handler(
     if len(parts) != EXPECTED_TRACK_PARTS:
         await event.respond(
             "Сообщение для прекращения отслеживания ссылки должно иметь вид "
-            "'/track <ваша ссылка>', например:\n/track https://example.com",
+            "'/untrack <ваша ссылка>', например:\n/untrack https://example.com",
         )
         return
 
-    repository = Repository()
     url = parts[1].strip()
-    user_id = event.sender_id
-    if await repository.is_user_have_url(user_id, url):
-        await repository.remove_subscription(user_id, url)
-        await event.respond(f"Ссылка {url} удалена из отслеживаемых.")
-    else:
-        await event.respond(f"Ссылка {url} не найдена в ваших подписках.")
+    headers = {"Tg-Chat-Id": str(event.chat_id)}
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.request(
+                "DELETE",
+                f"{settings.scrapper_api_url}/links",
+                content=json.dumps({"link": url}),
+                headers=headers,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:  # type: ignore[attr-defined] # noqa: PLR2004
+                await event.respond("Введён некорректный формат ссылки")
+            else:
+                await event.respond(
+                    f"Ошибка при удалении подписки: {e.response.json().get("detail")!s}",
+                )
+            return
+    await event.respond(f"Ссылка {url} удалена из отслеживаемых.")
