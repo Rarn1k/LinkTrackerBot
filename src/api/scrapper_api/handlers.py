@@ -26,15 +26,15 @@ repo = Repository()
     },
 )
 async def register_chat_endpoint(
-    chat_id: int = Path(..., title="ID чата", examples=[123456789]),
+    id: int = Path(..., title="ID чата", examples=[123456789]),
 ) -> dict[str, str]:
     """Регистрирует чат по указанному ID.
 
-    :param chat_id: Идентификатор чата (integer).
+    :param id: Идентификатор чата (integer).
     :return: Сообщение o регистрации чата.
     """
     try:
-        await repo.register_chat(chat_id)
+        await repo.register_chat(id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
     return {"message": "Чат зарегистрирован"}
@@ -47,11 +47,11 @@ async def register_chat_endpoint(
         200: {"description": "Чат успешно удалён"},
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
         404: {
             "description": "Чат не существует",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )
@@ -79,11 +79,11 @@ async def delete_chat_endpoint(
     responses={
         200: {
             "description": "Ссылки успешно получены",
-            "content": {"application/json": {"model_json_schema": ListLinksResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ListLinksResponse.model_json_schema()}},
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )
@@ -108,11 +108,11 @@ async def get_links_endpoint(
     responses={
         200: {
             "description": "Ссылка успешно добавлена",
-            "content": {"application/json": {"model_json_schema": LinkResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": LinkResponse.model_json_schema()}},
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )
@@ -141,15 +141,15 @@ async def add_link_endpoint(
     responses={
         200: {
             "description": "Ссылка успешно убрана",
-            "content": {"application/json": {"model_json_schema": LinkResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": LinkResponse.model_json_schema()}},
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
         404: {
             "description": "Ссылка не найдена",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )

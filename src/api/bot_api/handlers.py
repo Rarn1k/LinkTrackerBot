@@ -16,7 +16,7 @@ router = APIRouter(tags=["Bot API"])
         200: {"description": "Обновление обработано"},
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )
