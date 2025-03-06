@@ -11,11 +11,25 @@ class ApiErrorResponse(BaseModel):
     :param stacktrace: Список строк co stacktrace.
     """
 
-    description: str = Field(..., example="Некорректные параметры запроса")
-    code: str = Field(..., example="400")
-    exceptionName: str = Field(..., example="ValidationError")  # noqa: N815
-    exceptionMessage: str = Field(..., example="Ошибка валидации")  # noqa: N815
-    stacktrace: list[str] = Field(default_factory=list, example=["line1", "line2"])
+    description: str = Field(...)
+    code: str = Field(...)
+    exceptionName: str = Field(...)  # noqa: N815
+    exceptionMessage: str = Field(...)  # noqa: N815
+    stacktrace: list[str] = Field(default_factory=list)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "description": "Некорректные параметры запроса",
+                    "code": "400",
+                    "exceptionName": "ValidationError",
+                    "exceptionMessage": "Ошибка валидации",
+                    "stacktrace": ["line1", "line2"]
+                }
+            ]
+        }
+    }
 
 
 class LinkUpdate(BaseModel):
@@ -27,7 +41,20 @@ class LinkUpdate(BaseModel):
     :param tgChatIds: Список ID Telegram-чатов, куда необходимо отправить обновление.
     """
 
-    id: int = Field(..., example=1)
-    url: HttpUrl = Field(..., example="https://example.com")
-    description: str = Field(..., example="Новый комментарий добавлен")
-    tgChatIds: list[int] = Field(..., example=[123456789, 987654321])  # noqa: N815
+    id: int = Field(...)
+    url: HttpUrl = Field(...)
+    description: str = Field(...)
+    tgChatIds: list[int] = Field(...)  # noqa: N815
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": 1,
+                    "url": "https://example.com",
+                    "description": "Новый комментарий добавлен",
+                    "tgChatIds": [123456789, 987654321]
+                }
+            ]
+        }
+    }

@@ -21,7 +21,7 @@ repo = Repository()
         200: {"description": "Чат зарегистрирован"},
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.schema()}},
+            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
         },
     },
 )

@@ -14,11 +14,25 @@ class ApiErrorResponse(BaseModel):
     :param stacktrace: Список строк co stacktrace.
     """
 
-    description: str = Field(..., example="Некорректные параметры запроса")
-    code: str = Field(..., example="400")
-    exceptionName: str = Field(..., example="ValidationError")  # noqa: N815
-    exceptionMessage: str = Field(..., example="Ошибка валидации")  # noqa: N815
-    stacktrace: list[str] = Field(default_factory=list, example=["line1", "line2"])
+    description: str = Field(...)
+    code: str = Field(...)
+    exceptionName: str = Field(...)  # noqa: N815
+    exceptionMessage: str = Field(...)  # noqa: N815
+    stacktrace: list[str] = Field(default_factory=list)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "description": "Некорректные параметры запроса",
+                    "code": "400",
+                    "exceptionName": "ValidationError",
+                    "exceptionMessage": "Ошибка валидации",
+                    "stacktrace": ["line1", "line2"]
+                }
+            ]
+        }
+    }
 
 
 class LinkResponse(BaseModel):
@@ -28,13 +42,28 @@ class LinkResponse(BaseModel):
     :param url: URL ссылки.
     :param tags: Список тегов.
     :param filters: Список фильтров.
+    :param last_updated: Последнее время обновления.
     """
 
-    id: int = Field(..., example=1)
-    url: HttpUrl = Field(..., example="https://example.com")
-    tags: list[str] = Field(..., example=["news", "tech"])
-    filters: list[str] = Field(..., example=["filter1", "filter2"])
-    last_updated: Optional[datetime] = Field(None, example="2023-10-01T12:00:00Z")
+    id: int = Field(...)
+    url: HttpUrl = Field(...)
+    tags: list[str] = Field(...)
+    filters: list[str] = Field(...)
+    last_updated: Optional[datetime] = Field(None)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": 1,
+                    "url": "https://example.com",
+                    "tags": ["news", "tech"],
+                    "filters": ["filter1:value1", "filter2:value2"],
+                    "last_updated": "2023-10-01T12:00:00Z"
+                }
+            ]
+        }
+    }
 
 
 class AddLinkRequest(BaseModel):
@@ -45,9 +74,21 @@ class AddLinkRequest(BaseModel):
     :param filters: Список фильтров (опционально).
     """
 
-    link: HttpUrl = Field(..., example="https://example.com")
-    tags: list[str] = Field(default_factory=list, example=["news", "tech"])
-    filters: list[str] = Field(default_factory=list, example=["filter1", "filter2"])
+    link: HttpUrl = Field(...)
+    tags: list[str] = Field(default_factory=list)
+    filters: list[str] = Field(default_factory=list)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "link": "https://example.com",
+                    "tags": ["news", "tech"],
+                    "filters": ["filter1:value1", "filter2:value2"]
+                }
+            ]
+        }
+    }
 
 
 class ListLinksResponse(BaseModel):
@@ -57,8 +98,34 @@ class ListLinksResponse(BaseModel):
     :param size: Общее количество ссылок.
     """
 
-    links: list[LinkResponse] = Field(..., example=[])
-    size: int = Field(..., example=0)
+    links: list[LinkResponse] = Field(...)
+    size: int = Field(...)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "links": [
+                        {
+                            "id": 1,
+                            "url": "https://example.com",
+                            "tags": ["news", "tech"],
+                            "filters": ["filter1:value1", "filter2:value2"],
+                            "last_updated": "2023-10-01T12:00:00Z"
+                        },
+                        {
+                            "id": 2,
+                            "url": "https://another-example.com",
+                            "tags": ["blog", "science"],
+                            "filters": ["filter3:value3", "filter4:value4"],
+                            "last_updated": "2023-10-02T14:00:00Z"
+                        }
+                    ],
+                    "size": 2,
+                }
+            ]
+        }
+    }
 
 
 class RemoveLinkRequest(BaseModel):
@@ -67,4 +134,14 @@ class RemoveLinkRequest(BaseModel):
     :param link: URL ссылки, которую нужно прекратить отслеживать.
     """
 
-    link: HttpUrl = Field(..., example="https://example.com")
+    link: HttpUrl = Field(...)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "link": "https://example.com"
+                }
+            ]
+        }
+    }
