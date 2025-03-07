@@ -1,81 +1,87 @@
-# from typing import List
-# from unittest.mock import Mock
-#
-# import pytest
-# from pytest_mock import MockerFixture
-#
-# from src.bd.repository import Subscription
-# from src.handlers.get_list import list_handler
-#
-# pytestmark = pytest.mark.asyncio
-#
-#
-# @pytest.fixture
-# def mock_message_repository(mock_repository: Mock, mocker: MockerFixture) -> Mock:
-#     """Фикстура для патчинга Repository в модуле src.handlers.get_list."""
-#     return mocker.patch(
-#         "src.handlers.get_list.Repository",
-#         return_value=mock_repository,
-#         autospec=True,
-#     )
-#
-#
-# async def test_list_handler_unregistered_user(
-#     mock_event: Mock,
-#     mock_message_repository: Mock,
-# ) -> None:
-#     """Тест: незарегистрированный пользователь получает запрос на регистрацию."""
-#     mock_message_repository.return_value.users = {}
-#     expected_response = "Вы не зарегистрированы. Пожалуйста, введите /start для начала работы."
-#
-#     await list_handler(mock_event)
-#
-#     mock_event.respond.assert_called_once_with(expected_response)
-#     mock_message_repository.return_value.get_subscriptions.assert_not_called()
-#
-#
-# @pytest.mark.parametrize(
-#     ("subscriptions", "expected_response"),
-#     [
-#         (
-#             [],
-#             "У вас нет активных подписок.",
-#         ),
-#         (
-#             [
-#                 Subscription(
-#                     url="https://example.com",
-#                     tags=["tag1", "tag2"],
-#                     filters={"key": "value"},
-#                 ),
-#                 Subscription(url="https://example.org", tags=[], filters={}),
-#             ],
-#             "Ваши подписки:\n"
-#             "https://example.com\nТэги: tag1 tag2\nФильтры: {'key': 'value'}\n\n"
-#             "https://example.org\nТэги: \nФильтры: {}\n",
-#         ),
-#     ],
-#     ids=["no_subscriptions", "with_subscriptions"],
-# )
-# async def test_list_handler_registered_user(
-#     mock_event: Mock,
-#     mock_message_repository: Mock,
-#     subscriptions: List[Subscription],
-#     expected_response: str,
-# ) -> None:
-#     """Тест: зарегистрированный пользователь получает сообщение в зависимости от наличия подписок.
-#
-#     Проверяет логику функции для случаев c пустым и непустым списком подписок.
-#
-#     :param mock_event: Мок-объект события Telegram.
-#     :param mock_message_repository: Мок-объект Repository.
-#     :param subscriptions: Список подписок пользователя.
-#     :param expected_response: Ожидаемое сообщение в ответе.
-#     """
-#     mock_message_repository.return_value.users = {123: subscriptions}
-#     mock_message_repository.return_value.get_subscriptions.return_value = subscriptions
-#
-#     await list_handler.__wrapped__(mock_event)
-#
-#     mock_event.respond.assert_called_once_with(expected_response)
-#     mock_message_repository.return_value.get_subscriptions.assert_called_once_with(123)
+from unittest.mock import AsyncMock, Mock
+
+import httpx
+import pytest
+
+from src.handlers.get_list import list_handler
+from src.settings import settings
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("mock_response_data", "expected_response"),
+    [
+        ({"size": 0, "links": []}, "У вас нет активных подписок."),
+        (
+            {
+                "size": 2,
+                "links": [
+                    {
+                        "url": "https://example.com",
+                        "tags": ["tag1", "tag2"],
+                        "filters": ["filter1"],
+                    },
+                    {"url": "https://example.org", "tags": [], "filters": []},
+                ],
+            },
+            "Ваши подписки:\n"
+            "https://example.com\nТэги: tag1 tag2\nФильтры: filter1\n\n"
+            "https://example.org\nТэги: \nФильтры: \n",
+        ),
+    ],
+    ids=["empty_subscriptions", "with_subscriptions"],
+)
+async def test_list_handler_success(
+    mock_event: Mock,
+    mock_httpx_client: AsyncMock,
+    mock_response_data: dict,
+    expected_response: str,
+) -> None:
+    """Успешное получение списка подписок."""
+    mock_response = Mock(spec=httpx.Response)
+    mock_response.json.return_value = mock_response_data
+    mock_httpx_client.get.return_value = mock_response
+
+    await list_handler(mock_event)
+
+    mock_httpx_client.get.assert_called_once_with(
+        f"{settings.scrapper_api_url}/links",
+        headers={"Tg-Chat-Id": "123456789"},
+    )
+    mock_event.respond.assert_called_once_with(expected_response)
+
+
+@pytest.mark.parametrize(
+    ("status_code", "error_detail"),
+    [
+        (400, "Invalid request parameters"),
+        (500, "Internal server error"),
+    ],
+    ids=["http_400", "http_500"],
+)
+async def test_list_handler_http_error(
+    mock_event: Mock,
+    mock_httpx_client: AsyncMock,
+    status_code: int,
+    error_detail: str,
+) -> None:
+    """Обработка HTTP-ошибок при получении подписок."""
+    mock_response = Mock(spec=httpx.Response)
+    mock_response.json.return_value = {"detail": error_detail}
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        message=f"{status_code} Error",
+        request=Mock(),
+        response=mock_response,
+    )
+    mock_httpx_client.get.return_value = mock_response
+    expected_response = f"Ошибка при получении подписок: {error_detail}"
+
+    await list_handler(mock_event)
+
+    mock_httpx_client.get.assert_called_once_with(
+        f"{settings.scrapper_api_url}/links",
+        headers={"Tg-Chat-Id": "123456789"},
+    )
+    mock_event.respond.assert_called_once_with(expected_response)

@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.scrapper_api.models import LinkResponse, AddLinkRequest, RemoveLinkRequest
+from src.api.scrapper_api.models import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.bd.repository import Repository
 
 pytestmark = pytest.mark.asyncio
@@ -38,9 +38,9 @@ def repository() -> Repository:
 async def test_register_chat_success(
     repository: Repository,
     chats: dict[int, bool],
-    links,
+    links: dict[int, list[LinkResponse]],
     expected_chats_after: dict[int, bool],
-    expected_links_after,
+    expected_links_after: dict[int, list[LinkResponse]],
 ) -> None:
     """Проверяет регистрацию чата."""
     repository.chats = chats
@@ -53,8 +53,11 @@ async def test_register_chat_success(
 
 
 async def test_register_chat_invalid_id(repository: Repository) -> None:
-    """Проверяет, что регистрация с некорректным ID выбрасывает ValueError."""
-    with pytest.raises(ValueError, match="Некорректный идентификатор чата: -123. Должен быть >= 0."):
+    """Проверяет, что регистрация c некорректным ID выбрасывает ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="Некорректный идентификатор чата: -123. Должен быть >= 0.",
+    ):
         await repository.register_chat(-123)
     assert repository.chats == {}
 
@@ -79,7 +82,7 @@ async def test_delete_chat(
     expected_chats_after: dict[int, bool],
     expected_links_after: dict[int, list[LinkResponse]],
 ) -> None:
-    """Проверяет удаление чата и связанных с ним ссылок."""
+    """Проверяет удаление чата и связанных c ним ссылок."""
     repository.chats = chats
     repository.links = links
     await repository.delete_chat(123)
@@ -88,9 +91,12 @@ async def test_delete_chat(
 
 
 async def test_delete_chat_invalid_id(repository: Repository) -> None:
-    """Проверяет, что удаление чата с некорректным ID выбрасывает ValueError."""
+    """Проверяет, что удаление чата c некорректным ID выбрасывает ValueError."""
     repository.chats = {123: True}
-    with pytest.raises(ValueError, match="Некорректный идентификатор чата: -123. Должен быть >= 0."):
+    with pytest.raises(
+        ValueError,
+        match="Некорректный идентификатор чата: -123. Должен быть >= 0.",
+    ):
         await repository.delete_chat(-123)
     assert repository.chats == {123: True}
 
@@ -113,9 +119,13 @@ async def test_delete_chat_nonexistent(repository: Repository) -> None:
             {
                 123: [
                     LinkResponse(
-                        id=1, url="https://example.com", tags=[], filters=[], last_updated=None
-                    )
-                ]
+                        id=1,
+                        url="https://example.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
+                    ),
+                ],
             },
         ),
         (
@@ -128,8 +138,8 @@ async def test_delete_chat_nonexistent(repository: Repository) -> None:
                         tags=["tag"],
                         filters=["filter"],
                         last_updated=None,
-                    )
-                ]
+                    ),
+                ],
             },
             AddLinkRequest(link="https://example.com", tags=["new"], filters=["new_filter"]),
             {
@@ -148,7 +158,7 @@ async def test_delete_chat_nonexistent(repository: Repository) -> None:
                         filters=["new_filter"],
                         last_updated=None,
                     ),
-                ]
+                ],
             },
         ),
     ],
@@ -184,14 +194,18 @@ async def test_add_link_duplicate(repository: Repository) -> None:
     """Проверяет, что добавление уже существующей ссылки выбрасывает ValueError."""
     repository.chats = {123: True}
     repository.links = {
-        123: [LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None)]
+        123: [
+            LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None),
+        ],
     }
     add_req = AddLinkRequest(link="https://example.com", tags=["new"], filters=["new_filter"])
 
     with pytest.raises(ValueError, match="Ссылка уже отслеживается"):
         await repository.add_link(123, add_req)
     assert repository.links == {
-        123: [LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None)]
+        123: [
+            LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None),
+        ],
     }
 
 
@@ -203,9 +217,13 @@ async def test_add_link_duplicate(repository: Repository) -> None:
             {
                 123: [
                     LinkResponse(
-                        id=1, url="https://example.com", tags=[], filters=[], last_updated=None
-                    )
-                ]
+                        id=1,
+                        url="https://example.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
+                    ),
+                ],
             },
             RemoveLinkRequest(link="https://example.com"),
             {123: []},
@@ -222,15 +240,19 @@ async def test_add_link_duplicate(repository: Repository) -> None:
                         last_updated=None,
                     ),
                     LinkResponse(id=2, url="https://another.com", tags=[], filters=[]),
-                ]
+                ],
             },
             RemoveLinkRequest(link="https://example.com"),
             {
                 123: [
                     LinkResponse(
-                        id=2, url="https://another.com", tags=[], filters=[], last_updated=None
-                    )
-                ]
+                        id=2,
+                        url="https://another.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
+                    ),
+                ],
             },
         ),
     ],
@@ -282,32 +304,52 @@ async def test_remove_link_nonexistent(repository: Repository) -> None:
             {
                 123: [
                     LinkResponse(
-                        id=1, url="https://example.com", tags=[], filters=[], last_updated=None
-                    )
-                ]
+                        id=1,
+                        url="https://example.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
+                    ),
+                ],
             },
             [LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None)],
         ),
         (
-                {123: True},
-                {
-                    123: [
-                        LinkResponse(
-                            id=1, url="https://example.com", tags=[], filters=[], last_updated=None
-                        ),
-                        LinkResponse(
-                            id=1, url="https://another.com", tags=[], filters=[], last_updated=None
-                        )
-                    ]
-                },
-                [
+            {123: True},
+            {
+                123: [
                     LinkResponse(
-                        id=1, url="https://example.com", tags=[], filters=[], last_updated=None
+                        id=1,
+                        url="https://example.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
                     ),
                     LinkResponse(
-                        id=1, url="https://another.com", tags=[], filters=[], last_updated=None
-                    )
+                        id=1,
+                        url="https://another.com",
+                        tags=[],
+                        filters=[],
+                        last_updated=None,
+                    ),
                 ],
+            },
+            [
+                LinkResponse(
+                    id=1,
+                    url="https://example.com",
+                    tags=[],
+                    filters=[],
+                    last_updated=None,
+                ),
+                LinkResponse(
+                    id=1,
+                    url="https://another.com",
+                    tags=[],
+                    filters=[],
+                    last_updated=None,
+                ),
+            ],
         ),
         (
             {1: True},
@@ -319,8 +361,8 @@ async def test_remove_link_nonexistent(repository: Repository) -> None:
                         tags=["tag"],
                         filters=["filter"],
                         last_updated=None,
-                    )
-                ]
+                    ),
+                ],
             },
             [],
         ),
@@ -343,7 +385,10 @@ async def test_get_links_success(
 
 
 async def test_get_links_invalid_id(repository: Repository) -> None:
-    """Проверяет, что получение ссылок с некорректным ID выбрасывает ValueError."""
-    with pytest.raises(ValueError, match="Некорректный идентификатор чата: -123. Должен быть >= 0."):
+    """Проверяет, что получение ссылок c некорректным ID выбрасывает ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="Некорректный идентификатор чата: -123. Должен быть >= 0.",
+    ):
         await repository.get_links(-123)
     assert repository.links == {}

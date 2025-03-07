@@ -26,14 +26,12 @@ def mock_event() -> Mock:
 
 
 @pytest.fixture
-def mock_repository(mocker: MockerFixture) -> Mock:
-    repo: Mock = mocker.Mock()
-    repo.add_user = AsyncMock(return_value=True)
-    repo.add_subscription = AsyncMock(return_value=True)
-    repo.remove_subscription = AsyncMock()
-    repo.get_subscriptions = AsyncMock(return_value=[])
-    repo.is_user_have_url = AsyncMock(return_value=False)
-    return repo
+def mock_httpx_client(mocker: MockerFixture) -> AsyncMock:
+    client = AsyncMock()
+    mocker.patch("httpx.AsyncClient", return_value=client)
+    client.__aenter__.return_value = client
+    client.__aexit__ = AsyncMock(return_value=None)
+    return client
 
 
 @pytest.fixture
@@ -45,12 +43,6 @@ def mock_memory_storage(mocker: MockerFixture) -> Mock:
     storage.set_data = mocker.AsyncMock()
     storage.clear = mocker.AsyncMock()
     return storage
-
-
-@pytest.fixture
-def mock_build_key(mocker: MockerFixture) -> Mock:
-    build_key: Mock = mocker.Mock()
-    return build_key
 
 
 @pytest.fixture(scope="session")
