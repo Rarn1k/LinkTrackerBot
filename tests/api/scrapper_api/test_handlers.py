@@ -205,7 +205,7 @@ async def test_remove_link_not_found(test_client: TestClient, mocker: MockerFixt
     tg_chat_id = 123456789
     link_data = {"link": "https://nonexistent.com"}
     mock_repo = mocker.patch.object(Repository, "remove_link", new_callable=AsyncMock)
-    mock_repo.side_effect = ValueError(f"Ссылка {link_data["link"]} не найдена.")
+    mock_repo.side_effect = ValueError(f"Ссылка {link_data['link']} не найдена.")
 
     response = test_client.request(
         "DELETE",
