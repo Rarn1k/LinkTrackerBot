@@ -28,10 +28,10 @@ class ApiErrorResponse(BaseModel):
                     "code": "400",
                     "exceptionName": "ValidationError",
                     "exceptionMessage": "Ошибка валидации",
-                    "stacktrace": ["line1", "line2"]
-                }
-            ]
-        }
+                    "stacktrace": ["line1", "line2"],
+                },
+            ],
+        },
     }
 
 
@@ -59,10 +59,10 @@ class LinkResponse(BaseModel):
                     "url": "https://example.com",
                     "tags": ["news", "tech"],
                     "filters": ["filter1:value1", "filter2:value2"],
-                    "last_updated": "2023-10-01T12:00:00Z"
-                }
-            ]
-        }
+                    "last_updated": "2023-10-01T12:00:00Z",
+                },
+            ],
+        },
     }
 
 
@@ -84,10 +84,10 @@ class AddLinkRequest(BaseModel):
                 {
                     "link": "https://example.com",
                     "tags": ["news", "tech"],
-                    "filters": ["filter1:value1", "filter2:value2"]
-                }
-            ]
-        }
+                    "filters": ["filter1:value1", "filter2:value2"],
+                },
+            ],
+        },
     }
 
 
@@ -111,20 +111,13 @@ class ListLinksResponse(BaseModel):
                             "url": "https://example.com",
                             "tags": ["news", "tech"],
                             "filters": ["filter1:value1", "filter2:value2"],
-                            "last_updated": "2023-10-01T12:00:00Z"
+                            "last_updated": "2023-10-01T12:00:00Z",
                         },
-                        {
-                            "id": 2,
-                            "url": "https://another-example.com",
-                            "tags": ["blog", "science"],
-                            "filters": ["filter3:value3", "filter4:value4"],
-                            "last_updated": "2023-10-02T14:00:00Z"
-                        }
                     ],
-                    "size": 2,
-                }
-            ]
-        }
+                    "size": 1,
+                },
+            ],
+        },
     }
 
 
@@ -136,12 +129,4 @@ class RemoveLinkRequest(BaseModel):
 
     link: HttpUrl = Field(...)
 
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "link": "https://example.com"
-                }
-            ]
-        }
-    }
+    model_config = {"json_schema_extra": {"examples": [{"link": "https://example.com"}]}}

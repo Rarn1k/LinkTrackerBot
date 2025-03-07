@@ -15,57 +15,59 @@ repo = Repository()
 
 
 @router.post(
-    "/tg-chat/{id}",
-    response_model=dict,
+    "/tg-chat/{tg_chat_id}",
+    response_model=None,
+    summary="Зарегистрировать чат",
     responses={
         200: {"description": "Чат зарегистрирован"},
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
     },
 )
 async def register_chat_endpoint(
-    id: int = Path(..., title="ID чата", examples=[123456789]),
+    tg_chat_id: int = Path(..., title="ID чата", examples=[123456789]),
 ) -> dict[str, str]:
     """Регистрирует чат по указанному ID.
 
-    :param id: Идентификатор чата (integer).
+    :param tg_chat_id: Идентификатор чата (integer).
     :return: Сообщение o регистрации чата.
     """
     try:
-        await repo.register_chat(id)
+        await repo.register_chat(tg_chat_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
     return {"message": "Чат зарегистрирован"}
 
 
 @router.delete(
-    "/tg-chat/{id}",
-    response_model=dict,
+    "/tg-chat/{tg_chat_id}",
+    response_model=None,
+    summary="Удалить чат",
     responses={
         200: {"description": "Чат успешно удалён"},
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
         404: {
             "description": "Чат не существует",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
     },
 )
 async def delete_chat_endpoint(
-    chat_id: int = Path(..., title="ID чата", examples=[123456789]),
+    tg_chat_id: int = Path(..., title="ID чата", examples=[123456789]),
 ) -> dict[str, str]:
     """Удаляет зарегистрированный чат по указанному ID.
 
-    :param chat_id: Идентификатор чата.
+    :param tg_chat_id: Идентификатор чата.
     :return: Сообщение o6 успешном удалении чата.
     :raises HTTPException: Если чат не найден или параметры запроса некорректны.
     """
     try:
-        await repo.delete_chat(chat_id)
+        await repo.delete_chat(tg_chat_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
     except KeyError as e:
@@ -76,14 +78,15 @@ async def delete_chat_endpoint(
 @router.get(
     "/links",
     response_model=ListLinksResponse,
+    summary="Получить все отслеживаемые ссылки",
     responses={
         200: {
             "description": "Ссылки успешно получены",
-            "content": {"application/json": {"model_json_schema": ListLinksResponse.model_json_schema()}},
+            "model": ListLinksResponse,
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
     },
 )
@@ -105,14 +108,15 @@ async def get_links_endpoint(
 @router.post(
     "/links",
     response_model=LinkResponse,
+    summary="Добавить отслеживание ссылки",
     responses={
         200: {
             "description": "Ссылка успешно добавлена",
-            "content": {"application/json": {"model_json_schema": LinkResponse.model_json_schema()}},
+            "model": LinkResponse,
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
     },
 )
@@ -138,18 +142,19 @@ async def add_link_endpoint(
 @router.delete(
     "/links",
     response_model=LinkResponse,
+    summary="Убрать отслеживание ссылки",
     responses={
         200: {
             "description": "Ссылка успешно убрана",
-            "content": {"application/json": {"model_json_schema": LinkResponse.model_json_schema()}},
+            "model": LinkResponse,
         },
         400: {
             "description": "Некорректные параметры запроса",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
         404: {
             "description": "Ссылка не найдена",
-            "content": {"application/json": {"model_json_schema": ApiErrorResponse.model_json_schema()}},
+            "model": ApiErrorResponse,
         },
     },
 )

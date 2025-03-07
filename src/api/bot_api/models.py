@@ -25,10 +25,10 @@ class ApiErrorResponse(BaseModel):
                     "code": "400",
                     "exceptionName": "ValidationError",
                     "exceptionMessage": "Ошибка валидации",
-                    "stacktrace": ["line1", "line2"]
-                }
-            ]
-        }
+                    "stacktrace": ["line1", "line2"],
+                },
+            ],
+        },
     }
 
 
@@ -53,8 +53,8 @@ class LinkUpdate(BaseModel):
                     "id": 1,
                     "url": "https://example.com",
                     "description": "Новый комментарий добавлен",
-                    "tgChatIds": [123456789, 987654321]
-                }
-            ]
-        }
+                    "tgChatIds": [123456789, 987654321],
+                },
+            ],
+        },
     }
