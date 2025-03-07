@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -67,7 +66,7 @@ async def process_subscription(
             )
             updated = await gh_client.check_updates(owner, repo_name, sub.last_updated)
             if updated:
-                await notify_bot(sub.chat_id, url, "Обновление на GitHub!")
+                await notify_bot(chat_id, url, "Обновление на GitHub!")
                 sub.last_updated = datetime.now(timezone.utc)
         else:
             logger.warning("Некорректный GitHub URL: %s", url)
@@ -75,7 +74,7 @@ async def process_subscription(
         logger.warning("Неподдерживаемый URL: %s", url)
 
 
-async def check_updates(chat_id: Optional[int] = None) -> None:
+async def check_updates(chat_id: int) -> None:
     """Планировщик, который каждые 60 секунд проверяет обновления по всем подпискам
     и отправляет уведомление через notify_bot, если обнаружены изменения.
 

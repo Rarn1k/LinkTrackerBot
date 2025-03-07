@@ -1,4 +1,7 @@
+from typing import Generator
+
 import pytest
+from pydantic import HttpUrl
 
 from src.api.scrapper_api.models import AddLinkRequest, LinkResponse, RemoveLinkRequest
 from src.bd.repository import Repository
@@ -7,7 +10,7 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def repository() -> Repository:
+def repository() -> Generator[Repository, None, None]:
     """Фикстура для создания чистого экземпляра Repository."""
     repo = Repository()
     yield repo
@@ -115,7 +118,7 @@ async def test_delete_chat_nonexistent(repository: Repository) -> None:
         (
             {123: True},
             {},
-            AddLinkRequest(link="https://example.com", tags=[], filters=[]),
+            AddLinkRequest(link=HttpUrl("https://example.com"), tags=[], filters=[]),
             {
                 123: [
                     LinkResponse(
@@ -134,14 +137,18 @@ async def test_delete_chat_nonexistent(repository: Repository) -> None:
                 123: [
                     LinkResponse(
                         id=1,
-                        url="https://another.com",
+                        url=HttpUrl("https://another.com"),
                         tags=["tag"],
                         filters=["filter"],
                         last_updated=None,
                     ),
                 ],
             },
-            AddLinkRequest(link="https://example.com", tags=["new"], filters=["new_filter"]),
+            AddLinkRequest(
+                link=HttpUrl("https://example.com"),
+                tags=["new"],
+                filters=["new_filter"],
+            ),
             {
                 123: [
                     LinkResponse(
@@ -183,7 +190,7 @@ async def test_add_link_success(
 
 async def test_add_link_unregistered_chat(repository: Repository) -> None:
     """Проверяет, что добавление ссылки для незарегистрированного чата выбрасывает KeyError."""
-    add_req = AddLinkRequest(link="https://example.com", tags=[], filters=[])
+    add_req = AddLinkRequest(link=HttpUrl("https://example.com"), tags=[], filters=[])
 
     with pytest.raises(KeyError, match="Чат с идентификатором 123 не найден."):
         await repository.add_link(123, add_req)
@@ -195,16 +202,32 @@ async def test_add_link_duplicate(repository: Repository) -> None:
     repository.chats = {123: True}
     repository.links = {
         123: [
-            LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None),
+            LinkResponse(
+                id=1,
+                url=HttpUrl("https://example.com"),
+                tags=[],
+                filters=[],
+                last_updated=None,
+            ),
         ],
     }
-    add_req = AddLinkRequest(link="https://example.com", tags=["new"], filters=["new_filter"])
+    add_req = AddLinkRequest(
+        link=HttpUrl("https://example.com"),
+        tags=["new"],
+        filters=["new_filter"],
+    )
 
     with pytest.raises(ValueError, match="Ссылка уже отслеживается"):
         await repository.add_link(123, add_req)
     assert repository.links == {
         123: [
-            LinkResponse(id=1, url="https://example.com", tags=[], filters=[], last_updated=None),
+            LinkResponse(
+                id=1,
+                url=HttpUrl("https://example.com"),
+                tags=[],
+                filters=[],
+                last_updated=None,
+            ),
         ],
     }
 
@@ -225,7 +248,7 @@ async def test_add_link_duplicate(repository: Repository) -> None:
                     ),
                 ],
             },
-            RemoveLinkRequest(link="https://example.com"),
+            RemoveLinkRequest(link=HttpUrl("https://example.com")),
             {123: []},
         ),
         (
@@ -242,12 +265,12 @@ async def test_add_link_duplicate(repository: Repository) -> None:
                     LinkResponse(id=2, url="https://another.com", tags=[], filters=[]),
                 ],
             },
-            RemoveLinkRequest(link="https://example.com"),
+            RemoveLinkRequest(link=HttpUrl("https://example.com")),
             {
                 123: [
                     LinkResponse(
                         id=2,
-                        url="https://another.com",
+                        url=HttpUrl("https://another.com"),
                         tags=[],
                         filters=[],
                         last_updated=None,
@@ -277,7 +300,7 @@ async def test_remove_link_success(
 
 async def test_remove_link_unregistered_chat(repository: Repository) -> None:
     """Проверяет, что удаление ссылки для незарегистрированного чата выбрасывает KeyError."""
-    remove_req = RemoveLinkRequest(link="https://example.com")
+    remove_req = RemoveLinkRequest(link=HttpUrl("https://example.com"))
 
     with pytest.raises(KeyError, match="Чат с идентификатором 123 не найден."):
         await repository.remove_link(123, remove_req)
@@ -288,7 +311,7 @@ async def test_remove_link_nonexistent(repository: Repository) -> None:
     """Проверяет, что удаление несуществующей ссылки выбрасывает ValueError."""
     repository.chats = {123: True}
     repository.links = {123: []}
-    remove_req = RemoveLinkRequest(link="https://example.com/")
+    remove_req = RemoveLinkRequest(link=HttpUrl("https://example.com/"))
 
     with pytest.raises(ValueError, match="Ссылка https://example.com/ не найдена."):
         await repository.remove_link(123, remove_req)

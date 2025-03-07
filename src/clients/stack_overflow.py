@@ -26,7 +26,7 @@ class StackOverflowClient:
         self.api_key = api_key
         self.site = site
 
-    async def get_question(self, question_id: str) -> Optional[dict[str, Any]]:
+    async def get_question(self, question_id: str) -> Optional[Any]:  # noqa: ANN401
         """Получает информацию o вопросе по ID.
 
         :param question_id: ID вопроса на StackOverflow.
@@ -43,16 +43,16 @@ class StackOverflowClient:
                 response = await client.get(url, params=params)
                 response.raise_for_status()
                 data = response.json()
-                if data.get("items"):
-                    return data["items"][0]
-                else:
+                if data is None or not data.get("items"):
                     return None
+                return data["items"][0]
+
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == httpx.codes.BAD_REQUEST:
                     raise ValueError(f"Некорректный запрос для вопроса {question_id}") from e
                 return None
 
-    async def check_updates(self, question_id: str, last_check: datetime) -> bool:
+    async def check_updates(self, question_id: str, last_check: Optional[datetime]) -> bool:
         """Проверяет, были ли обновления вопроса после последней проверки.
 
         :param question_id: ID вопроса на StackOverflow.

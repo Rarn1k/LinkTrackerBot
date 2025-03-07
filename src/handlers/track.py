@@ -27,6 +27,13 @@ async def track_handler(
         memory_storage = MemoryStorage()
         url = parts[1].strip()
         key = await build_storage_key(event)
+        data = await memory_storage.get_data(key)
+        if data is None:
+            await event.respond(
+                "Для корректной работы данной команды необходимо "
+                "сначала зарегистрировать чат с помощью команды /start.",
+            )
+            return
         await memory_storage.set_state(key, State.WAITING_FOR_TAGS)
         await memory_storage.set_data(key, {"url": url})
         await event.respond("Введите тэги (опционально, разделённые пробелами):")

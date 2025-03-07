@@ -39,6 +39,7 @@ async def test_track_handler_positive(
 ) -> None:
     """Обработка команды /track c правильным форматом сообщения."""
     mock_event.message.message = message_text
+    mock_track_memory_storage.get_data.return_value = {}
     expected_response = "Введите тэги (опционально, разделённые пробелами):"
 
     await track_handler(mock_event)

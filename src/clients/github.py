@@ -27,7 +27,7 @@ class GitHubClient:
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
 
-    async def get_repo_events(self, owner: str, repo: str) -> Optional[list[dict[str, Any]]]:
+    async def get_repo_events(self, owner: str, repo: str) -> Optional[Any]:  # noqa: ANN401
         """Получает список событий репозитория.
 
         Запрашивает данные через эндпоинт /repos/{owner}/{repo}/events.
@@ -50,7 +50,7 @@ class GitHubClient:
                     raise ValueError(f"Репозиторий {owner}/{repo} не найден") from e
                 return None
 
-    async def check_updates(self, owner: str, repo: str, last_check: datetime) -> bool:
+    async def check_updates(self, owner: str, repo: str, last_check: Optional[datetime]) -> bool:
         """Проверяет, были ли новые события в репозитории после последней проверки.
 
         Сравнивает время создания последнего события (created_at) c указанным временем проверки.

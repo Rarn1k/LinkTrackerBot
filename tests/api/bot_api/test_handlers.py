@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Any
 from unittest.mock import AsyncMock
 
 import httpx
@@ -11,7 +12,7 @@ pytestmark = pytest.mark.asyncio
 
 async def test_send_update_success(mocker: MockerFixture, test_client: TestClient) -> None:
     """Успешная отправка обновления в чаты."""
-    update_data = {
+    update_data: dict[str, Any] = {
         "id": 1,
         "url": "https://example.com",
         "description": "Какое-то обновление",
@@ -30,7 +31,7 @@ async def test_send_update_success(mocker: MockerFixture, test_client: TestClien
         "message": f"Обновление для {update_data['url']}/ обработано",
     }
     calls = mock_post.call_args_list
-    assert len(calls) == len(update_data["tgChatIds"])
+    assert mock_post.call_count == len(update_data["tgChatIds"])
     assert calls[0].kwargs["json"] == {
         "chat_id": 123456789,
         "text": "Обновление для https://example.com/: Какое-то обновление",

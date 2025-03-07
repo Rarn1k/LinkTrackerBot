@@ -36,7 +36,7 @@ def mock_httpx_client(mocker: MockerFixture) -> AsyncMock:
 
 @pytest.fixture
 def mock_memory_storage(mocker: MockerFixture) -> Mock:
-    storage = mocker.Mock()
+    storage = Mock()
     storage.get_state = mocker.AsyncMock(return_value=None)
     storage.set_state = mocker.AsyncMock()
     storage.get_data = mocker.AsyncMock(return_value={})

@@ -32,10 +32,17 @@ async def msg_handler(event: NewMessage.Event) -> None:
     key = await build_storage_key(event)
     memory_storage = MemoryStorage()
     current_state = await memory_storage.get_state(key)
+    msg_to_start = (
+        "Для корректной работы данной команды необходимо "
+        "сначала зарегистрировать чат с помощью команды /start."
+    )
 
     if current_state == State.WAITING_FOR_TAGS:
         tags = event.raw_text.split()
         data = await memory_storage.get_data(key)
+        if data is None:
+            await event.respond(msg_to_start)
+            return
         data["tags"] = tags
         await memory_storage.set_data(key, data)
         await memory_storage.set_state(key, State.WAITING_FOR_FILTERS)
@@ -47,6 +54,9 @@ async def msg_handler(event: NewMessage.Event) -> None:
         filters_input = event.raw_text.split()
 
         data = await memory_storage.get_data(key)
+        if data is None:
+            await event.respond(msg_to_start)
+            return
         data["filters"] = filters_input
         await memory_storage.set_data(key, data)
 

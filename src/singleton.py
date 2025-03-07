@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Dict, Tuple, Type, TypeVar
+from typing import Any, ClassVar, Dict, Tuple, Type, TypeVar, cast
 
 T = TypeVar("T")
 
@@ -26,7 +26,7 @@ class SingletonMeta(type):
         :param kwargs: Именованные аргументы для инициализации экземпляра.
         :return: Единственный экземпляр класса.
         """
-        if cls not in cls._instances:
-            instance = super().__call__(*args, **kwargs)
-            cls._instances[cls] = instance
-        return cls._instances[cls]
+        if cls not in SingletonMeta._instances:
+            instance = cast(T, type.__call__(cls, *args, **kwargs))
+            SingletonMeta._instances[cls] = instance
+        return cast(T, SingletonMeta._instances[cls])

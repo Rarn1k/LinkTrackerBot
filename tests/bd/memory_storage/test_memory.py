@@ -1,3 +1,5 @@
+from typing import Any, Generator
+
 import pytest
 
 from src.bd.memory_storage.enum_states import State
@@ -7,7 +9,7 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture(autouse=True)
-def memory_storage() -> MemoryStorage:
+def memory_storage() -> Generator[MemoryStorage, None, None]:
     """Фикстура для создания чистого экземпляра MemoryStorage."""
     storage = MemoryStorage()
     yield storage
@@ -49,8 +51,8 @@ async def test_set_and_get_state(
 async def test_set_and_get_data(
     chat_id: int,
     user_id: int,
-    data_input: dict,
-    expected_data: dict,
+    data_input: dict[str, Any],
+    expected_data: dict[str, Any],
 ) -> None:
     """Проверяет сохранение и получение данных для заданного ключа."""
     storage = MemoryStorage()
@@ -74,9 +76,9 @@ async def test_clear(
     chat_id: int,
     user_id: int,
     initial_state: State,
-    initial_data: dict,
+    initial_data: dict[str, Any],
     expected_state: State,
-    expected_data: dict,
+    expected_data: dict[str, Any],
 ) -> None:
     """Проверяет метод clear, который сбрасывает состояние в None и очищает данные."""
     storage = MemoryStorage()

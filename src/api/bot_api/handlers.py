@@ -52,7 +52,7 @@ async def send_notification(
         },
     },
 )
-async def send_update(update: LinkUpdate) -> dict:
+async def send_update(update: LinkUpdate) -> dict[str, str]:
     """Отправляет обновление (LinkUpdate) в указанные Telegram-чаты.
 
     :param update: Объект обновления, содержащий id, url, описание и список tgChatIds.

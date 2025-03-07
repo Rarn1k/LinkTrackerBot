@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import httpx
@@ -36,7 +37,7 @@ pytestmark = pytest.mark.asyncio
 async def test_list_handler_success(
     mock_event: Mock,
     mock_httpx_client: AsyncMock,
-    mock_response_data: dict,
+    mock_response_data: dict[str, Any],
     expected_response: str,
 ) -> None:
     """Успешное получение списка подписок."""
