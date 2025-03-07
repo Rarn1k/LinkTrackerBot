@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any, Optional
 
 import httpx
 
@@ -15,22 +15,54 @@ class StackOverflowClient:
     """
 
     BASE_URL = "https://api.stackexchange.com/2.3"
+    DEFAULT_SITE = "stackoverflow"
 
-    async def get_question(self, question_id: str) -> Optional[Dict]:
-        """Получает информацию o вопросе по ID вопроса."""
+    def __init__(self, api_key: Optional[str] = None, site: str = DEFAULT_SITE) -> None:
+        """Инициализирует клиент c опциональным API-ключом и сайтом.
+
+        :param api_key: Ключ API для увеличения лимита запросов.
+        :param site: Сайт StackExchange (по умолчанию 'stackoverflow').
+        """
+        self.api_key = api_key
+        self.site = site
+
+    async def get_question(self, question_id: str) -> Optional[dict[str, Any]]:
+        """Получает информацию o вопросе по ID.
+
+        :param question_id: ID вопроса на StackOverflow.
+        :return: Словарь c данными вопроса или None, если запрос неуспешен.
+        :raises httpx.HTTPStatusError: Если сервер вернул ошибку (например, 400, 403).
+        """
         url = f"{self.BASE_URL}/questions/{question_id}"
+        params = {"site": self.site}
+        if self.api_key:
+            params["key"] = self.api_key
+
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            if response.status_code == 200:  # type: ignore[attr-defined] # noqa: PLR2004
+            try:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
                 data = response.json()
                 if data.get("items"):
                     return data["items"][0]
-            return None
+                else:
+                    return None
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == httpx.codes.BAD_REQUEST:
+                    raise ValueError(f"Некорректный запрос для вопроса {question_id}") from e
+                return None
 
     async def check_updates(self, question_id: str, last_check: datetime) -> bool:
-        """Проверяет, были ли обновления после последней проверки."""
+        """Проверяет, были ли обновления вопроса после последней проверки.
+
+        :param question_id: ID вопроса на StackOverflow.
+        :param last_check: Время последней проверки.
+        :return: True, если есть обновления, иначе False.
+        """
+        if last_check is None:
+            return True
         question = await self.get_question(question_id)
-        if question:
+        if question and "last_activity_date" in question:
             last_activity_date = datetime.fromtimestamp(
                 question["last_activity_date"],
                 tz=timezone.utc,
