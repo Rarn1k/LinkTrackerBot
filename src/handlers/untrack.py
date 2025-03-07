@@ -41,7 +41,7 @@ async def untrack_handler(event: NewMessage.Event) -> None:
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 422:  # type: ignore[attr-defined] # noqa: PLR2004
+            if e.response.status_code == httpx.codes.UNPROCESSABLE_ENTITY:
                 await event.respond("Введён некорректный формат ссылки")
             else:
                 await event.respond(
