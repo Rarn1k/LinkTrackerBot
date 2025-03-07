@@ -45,7 +45,7 @@ async def untrack_handler(event: NewMessage.Event) -> None:
                 await event.respond("Введён некорректный формат ссылки")
             else:
                 await event.respond(
-                    f"Ошибка при удалении подписки: {e.response.json().get("detail")!s}",
+                    f"Ошибка при удалении подписки: {e.response.json().get('detail')!s}",
                 )
             return
     await event.respond(f"Ссылка {url} удалена из отслеживаемых.")
