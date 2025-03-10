@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, HttpUrl
+from pydantic.alias_generators import to_camel
 
 
 class ApiErrorResponse(BaseModel):
@@ -6,18 +7,20 @@ class ApiErrorResponse(BaseModel):
 
     :param description: Описание ошибки.
     :param code: Код ошибки.
-    :param exceptionName: Имя исключения.
-    :param exceptionMessage: Сообщение исключения.
+    :param exception_name: Имя исключения.
+    :param exception_message: Сообщение исключения.
     :param stacktrace: Список строк co stacktrace.
     """
 
     description: str = Field(...)
     code: str = Field(...)
-    exceptionName: str = Field(...)  # noqa: N815
-    exceptionMessage: str = Field(...)  # noqa: N815
+    exception_name: str = Field(...)
+    exception_message: str = Field(...)
     stacktrace: list[str] = Field(default_factory=list)
 
     model_config = {
+        "populate_by_name": True,
+        "alias_generator": to_camel,
         "json_schema_extra": {
             "examples": [
                 {
@@ -38,15 +41,17 @@ class LinkUpdate(BaseModel):
     :param id: Идентификатор обновления.
     :param url: URL обновления.
     :param description: Описание обновления.
-    :param tgChatIds: Список ID Telegram-чатов, куда необходимо отправить обновление.
+    :param tg_chat_ids: Список ID Telegram-чатов, куда необходимо отправить обновление.
     """
 
     id: int = Field(...)
     url: HttpUrl = Field(...)
     description: str = Field(...)
-    tgChatIds: list[int] = Field(...)  # noqa: N815
+    tg_chat_ids: list[int] = Field(...)
 
     model_config = {
+        "populate_by_name": True,
+        "alias_generator": to_camel,
         "json_schema_extra": {
             "examples": [
                 {

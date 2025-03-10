@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
+from pydantic.alias_generators import to_camel
 
 
 class ApiErrorResponse(BaseModel):
@@ -9,18 +10,20 @@ class ApiErrorResponse(BaseModel):
 
     :param description: Описание ошибки.
     :param code: Код ошибки.
-    :param exceptionName: Имя исключения.
-    :param exceptionMessage: Сообщение исключения.
+    :param exception_name: Имя исключения.
+    :param exception_message: Сообщение исключения.
     :param stacktrace: Список строк co stacktrace.
     """
 
     description: str = Field(...)
     code: str = Field(...)
-    exceptionName: str = Field(...)  # noqa: N815
-    exceptionMessage: str = Field(...)  # noqa: N815
+    exception_name: str = Field(...)
+    exception_message: str = Field(...)
     stacktrace: list[str] = Field(default_factory=list)
 
     model_config = {
+        "populate_by_name": True,
+        "alias_generator": to_camel,
         "json_schema_extra": {
             "examples": [
                 {

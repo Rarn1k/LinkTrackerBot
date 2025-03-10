@@ -43,11 +43,11 @@ async def register_chat_endpoint(
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
     return {"message": "Чат зарегистрирован"}
 
 
@@ -82,20 +82,20 @@ async def delete_chat_endpoint(
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
     except KeyError as e:
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="404",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e).strip("'"),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e).strip("'"),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=404, content=error_response.model_dump())
+        return JSONResponse(status_code=404, content=error_response.model_dump(by_alias=True))
     return {"message": "Чат успешно удалён"}
 
 
@@ -128,11 +128,11 @@ async def get_links_endpoint(
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
     return ListLinksResponse(links=links, size=len(links))
 
 
@@ -167,11 +167,11 @@ async def add_link_endpoint(
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e).strip("'"),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e).strip("'"),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
     return new_link
 
 
@@ -211,18 +211,18 @@ async def remove_link_endpoint(
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
     except KeyError as e:
         error_response = ApiErrorResponse(
             description="Ссылка не найдена",
             code="404",
-            exceptionName=e.__class__.__name__,
-            exceptionMessage=str(e).strip("'"),
+            exception_name=e.__class__.__name__,
+            exception_message=str(e).strip("'"),
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=404, content=error_response.model_dump())
+        return JSONResponse(status_code=404, content=error_response.model_dump(by_alias=True))
     return removed_link

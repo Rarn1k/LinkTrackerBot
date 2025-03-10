@@ -64,11 +64,11 @@ async def send_update(update: LinkUpdate) -> LinkUpdate | JSONResponse:
         error_response = ApiErrorResponse(
             description="Некорректные параметры запроса",
             code="400",
-            exceptionName="ValueError",
-            exceptionMessage="Некорректный id обновления",
+            exception_name="ValueError",
+            exception_message="Некорректный id обновления",
             stacktrace=traceback.format_exc().split("\n"),
         )
-        return JSONResponse(status_code=400, content=error_response.model_dump())
+        return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
 
     logging.info("Получено обновление для ссылки: %s", update.url)
 
@@ -76,7 +76,7 @@ async def send_update(update: LinkUpdate) -> LinkUpdate | JSONResponse:
         await asyncio.gather(
             *(
                 send_notification(client, chat_id, update.url, update.description)
-                for chat_id in update.tgChatIds
+                for chat_id in update.tg_chat_ids
             ),
         )
 
