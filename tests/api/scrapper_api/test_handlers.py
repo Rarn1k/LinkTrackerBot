@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
 from src.bd.repository import Repository
+from src.settings import settings
 
 pytestmark = pytest.mark.asyncio
 
@@ -16,7 +17,7 @@ async def test_register_chat_success(test_client: TestClient, mocker: MockerFixt
     mock_repo = mocker.patch.object(Repository, "register_chat", new_callable=AsyncMock)
     mock_repo.return_value = None
 
-    response = test_client.post(f"/api/v1/scrapper/tg-chat/{tg_chat_id}")
+    response = test_client.post(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"message": "Чат зарегистрирован"}
     mock_repo.assert_awaited_once_with(tg_chat_id)
@@ -30,9 +31,17 @@ async def test_register_chat_invalid_id(test_client: TestClient, mocker: MockerF
         f"Некорректный идентификатор чата: {tg_chat_id}. Должен быть >= 0.",
     )
 
-    response = test_client.post(f"/api/v1/scrapper/tg-chat/{tg_chat_id}")
+    response = test_client.post(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Некорректные параметры запроса"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": f"Некорректный идентификатор чата: {tg_chat_id}. Должен быть >= 0.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_delete_chat_success(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -41,7 +50,7 @@ async def test_delete_chat_success(test_client: TestClient, mocker: MockerFixtur
     mock_repo = mocker.patch.object(Repository, "delete_chat", new_callable=AsyncMock)
     mock_repo.return_value = None
 
-    response = test_client.delete(f"/api/v1/scrapper/tg-chat/{tg_chat_id}")
+    response = test_client.delete(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"message": "Чат успешно удалён"}
     mock_repo.assert_awaited_once_with(tg_chat_id)
@@ -55,9 +64,17 @@ async def test_delete_chat_invalid_id(test_client: TestClient, mocker: MockerFix
         f"Некорректный идентификатор чата: {tg_chat_id}. Должен быть >= 0.",
     )
 
-    response = test_client.delete(f"/api/v1/scrapper/tg-chat/{tg_chat_id}")
+    response = test_client.delete(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Некорректные параметры запроса"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": f"Некорректный идентификатор чата: {tg_chat_id}. Должен быть >= 0.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_delete_chat_not_found(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -66,9 +83,17 @@ async def test_delete_chat_not_found(test_client: TestClient, mocker: MockerFixt
     mock_repo = mocker.patch.object(Repository, "delete_chat", new_callable=AsyncMock)
     mock_repo.side_effect = KeyError(f"Чат с идентификатором {tg_chat_id} не найден.")
 
-    response = test_client.delete(f"/api/v1/scrapper/tg-chat/{tg_chat_id}")
+    response = test_client.delete(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": "Чат не существует"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "404",
+        "exceptionName": "KeyError",
+        "exceptionMessage": f"Чат с идентификатором {tg_chat_id} не найден.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_get_links_success(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -77,7 +102,9 @@ async def test_get_links_success(test_client: TestClient, mocker: MockerFixture)
     mock_repo = mocker.patch.object(Repository, "get_links", new_callable=AsyncMock)
     mock_repo.return_value = []
 
-    response = test_client.get("/api/v1/scrapper/links", headers={"Tg-Chat-Id": str(tg_chat_id)})
+    response = test_client.get(
+        f"{settings.scrapper_api_url}/links", headers={"Tg-Chat-Id": str(tg_chat_id)},
+    )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"links": [], "size": 0}
     mock_repo.assert_awaited_once_with(tg_chat_id)
@@ -91,9 +118,19 @@ async def test_get_links_invalid_header(test_client: TestClient, mocker: MockerF
         f"Некорректный идентификатор чата: {tg_chat_id}. Должен быть >= 0.",
     )
 
-    response = test_client.get("/api/v1/scrapper/links", headers={"Tg-Chat-Id": str(tg_chat_id)})
+    response = test_client.get(
+        f"{settings.scrapper_api_url}/links", headers={"Tg-Chat-Id": str(tg_chat_id)},
+    )
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert "detail" in response.json()
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": "Некорректный идентификатор чата: -1. Должен быть >= 0.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_add_link_success(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -114,7 +151,7 @@ async def test_add_link_success(test_client: TestClient, mocker: MockerFixture) 
     }
 
     response = test_client.post(
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
@@ -136,12 +173,21 @@ async def test_add_link_not_found(test_client: TestClient, mocker: MockerFixture
     mock_repo.side_effect = KeyError(f"Чат с идентификатором {tg_chat_id} не найден.")
 
     response = test_client.post(
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
+
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Некорректные параметры запроса"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "KeyError",
+        "exceptionMessage": f"Чат с идентификатором {tg_chat_id} не найден.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_add_link_already_exists(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -152,12 +198,20 @@ async def test_add_link_already_exists(test_client: TestClient, mocker: MockerFi
     mock_repo.side_effect = ValueError("Ссылка уже отслеживается")
 
     response = test_client.post(
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Ссылка уже добавлена"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": "Ссылка уже отслеживается",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_remove_link_success(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -169,7 +223,7 @@ async def test_remove_link_success(test_client: TestClient, mocker: MockerFixtur
 
     response = test_client.request(
         "DELETE",
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
@@ -188,16 +242,24 @@ async def test_remove_link_chat_not_found(test_client: TestClient, mocker: Mocke
     tg_chat_id = 123456789
     link_data = {"link": "https://example.com"}
     mock_repo = mocker.patch.object(Repository, "remove_link", new_callable=AsyncMock)
-    mock_repo.side_effect = KeyError(f"Чат с идентификатором {tg_chat_id} не найден.")
+    mock_repo.side_effect = ValueError(f"Чат с идентификатором {tg_chat_id} не найден.")
 
     response = test_client.request(
         "DELETE",
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Чат не найден"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": f"Чат с идентификатором {tg_chat_id} не найден.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0
 
 
 async def test_remove_link_not_found(test_client: TestClient, mocker: MockerFixture) -> None:
@@ -205,13 +267,21 @@ async def test_remove_link_not_found(test_client: TestClient, mocker: MockerFixt
     tg_chat_id = 123456789
     link_data = {"link": "https://nonexistent.com"}
     mock_repo = mocker.patch.object(Repository, "remove_link", new_callable=AsyncMock)
-    mock_repo.side_effect = ValueError(f"Ссылка {link_data['link']} не найдена.")
+    mock_repo.side_effect = KeyError(f"Ссылка {link_data['link']} не найдена.")
 
     response = test_client.request(
         "DELETE",
-        "/api/v1/scrapper/links",
+        f"{settings.scrapper_api_url}/links",
         json=link_data,
         headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": "Ссылка не найдена"}
+    assert response.json() == {
+        "description": "Ссылка не найдена",
+        "code": "404",
+        "exceptionName": "KeyError",
+        "exceptionMessage": f"Ссылка {link_data['link']} не найдена.",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0

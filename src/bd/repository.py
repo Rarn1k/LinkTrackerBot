@@ -78,13 +78,13 @@ class Repository(metaclass=SingletonMeta):
         :raises HTTPException: Если чат не зарегистрирован или ссылка не найдена.
         """
         if chat_id not in self.chats:
-            raise KeyError(f"Чат с идентификатором {chat_id} не найден.")
+            raise ValueError(f"Чат с идентификатором {chat_id} не найден.")
         existing_links = self.links.get(chat_id, [])
         for link in existing_links:
             if link.url == remove_req.link:
                 existing_links.remove(link)
                 return link
-        raise ValueError(f"Ссылка {remove_req.link} не найдена.")
+        raise KeyError(f"Ссылка {remove_req.link} не найдена.")
 
     async def get_links(self, chat_id: int) -> List[LinkResponse]:
         """Возвращает список отслеживаемых ссылок для заданного чата.

@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Header, HTTPException, Path
+import traceback
+
+from fastapi import APIRouter, Header, Path
+from fastapi.responses import JSONResponse
 
 from src.api.bot_api.models import ApiErrorResponse
 from src.api.scrapper_api.models import (
@@ -16,7 +19,7 @@ repo = Repository()
 
 @router.post(
     "/tg-chat/{tg_chat_id}",
-    response_model=None,
+    response_model=dict[str, str],
     summary="Зарегистрировать чат",
     responses={
         200: {"description": "Чат зарегистрирован"},
@@ -28,7 +31,7 @@ repo = Repository()
 )
 async def register_chat_endpoint(
     tg_chat_id: int = Path(..., title="ID чата", examples=[123456789]),
-) -> dict[str, str]:
+) -> dict[str, str] | JSONResponse:
     """Регистрирует чат по указанному ID.
 
     :param tg_chat_id: Идентификатор чата (integer).
@@ -37,13 +40,20 @@ async def register_chat_endpoint(
     try:
         await repo.register_chat(tg_chat_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
     return {"message": "Чат зарегистрирован"}
 
 
 @router.delete(
     "/tg-chat/{tg_chat_id}",
-    response_model=None,
+    response_model=dict[str, str],
     summary="Удалить чат",
     responses={
         200: {"description": "Чат успешно удалён"},
@@ -59,7 +69,7 @@ async def register_chat_endpoint(
 )
 async def delete_chat_endpoint(
     tg_chat_id: int = Path(..., title="ID чата", examples=[123456789]),
-) -> dict[str, str]:
+) -> dict[str, str] | JSONResponse:
     """Удаляет зарегистрированный чат по указанному ID.
 
     :param tg_chat_id: Идентификатор чата.
@@ -69,9 +79,23 @@ async def delete_chat_endpoint(
     try:
         await repo.delete_chat(tg_chat_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
     except KeyError as e:
-        raise HTTPException(status_code=404, detail="Чат не существует") from e
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="404",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e).strip("'"),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=404, content=error_response.model_dump())
     return {"message": "Чат успешно удалён"}
 
 
@@ -92,7 +116,7 @@ async def delete_chat_endpoint(
 )
 async def get_links_endpoint(
     tg_chat_id: int = Header(..., alias="Tg-Chat-Id"),
-) -> ListLinksResponse:
+) -> ListLinksResponse | JSONResponse:
     """Возвращает список отслеживаемых ссылок для чата.
 
     :param tg_chat_id: Идентификатор Telegram-чата (передаётся в заголовке).
@@ -101,7 +125,14 @@ async def get_links_endpoint(
     try:
         links = await repo.get_links(tg_chat_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
     return ListLinksResponse(links=links, size=len(links))
 
 
@@ -123,7 +154,7 @@ async def get_links_endpoint(
 async def add_link_endpoint(
     add_link_req: AddLinkRequest,
     tg_chat_id: int = Header(..., alias="Tg-Chat-Id", examples=[123456789]),
-) -> LinkResponse:
+) -> LinkResponse | JSONResponse:
     """Добавляет отслеживаемую ссылку для заданного чата.
 
     :param add_link_req: Данные запроса для добавления ссылки.
@@ -132,10 +163,15 @@ async def add_link_endpoint(
     """
     try:
         new_link = await repo.add_link(tg_chat_id, add_link_req)
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail="Некорректные параметры запроса") from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Ссылка уже добавлена") from e
+    except (KeyError, ValueError) as e:
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e).strip("'"),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
     return new_link
 
 
@@ -161,7 +197,7 @@ async def add_link_endpoint(
 async def remove_link_endpoint(
     remove_link_req: RemoveLinkRequest,
     tg_chat_id: int = Header(..., alias="Tg-Chat-Id"),
-) -> LinkResponse:
+) -> LinkResponse | JSONResponse:
     """Убирает отслеживание ссылки для заданного чата.
 
     :param remove_link_req: Данные запроса для удаления ссылки.
@@ -171,8 +207,22 @@ async def remove_link_endpoint(
     """
     try:
         removed_link = await repo.remove_link(tg_chat_id, remove_link_req)
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail="Чат не найден") from e
     except ValueError as e:
-        raise HTTPException(status_code=404, detail="Ссылка не найдена") from e
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
+    except KeyError as e:
+        error_response = ApiErrorResponse(
+            description="Ссылка не найдена",
+            code="404",
+            exceptionName=e.__class__.__name__,
+            exceptionMessage=str(e).strip("'"),
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=404, content=error_response.model_dump())
     return removed_link

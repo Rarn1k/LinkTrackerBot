@@ -14,7 +14,7 @@ async def test_send_update_success(mocker: MockerFixture, test_client: TestClien
     """Успешная отправка обновления в чаты."""
     update_data: dict[str, Any] = {
         "id": 1,
-        "url": "https://example.com",
+        "url": "https://example.com/",
         "description": "Какое-то обновление",
         "tgChatIds": [123456789, 987654321],
     }
@@ -27,9 +27,7 @@ async def test_send_update_success(mocker: MockerFixture, test_client: TestClien
     response = test_client.post("/api/v1/bot/updates", json=update_data)
 
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        "message": f"Обновление для {update_data['url']}/ обработано",
-    }
+    assert response.json() == update_data
     calls = mock_post.call_args_list
     assert mock_post.call_count == len(update_data["tgChatIds"])
     assert calls[0].kwargs["json"] == {
@@ -54,4 +52,12 @@ async def test_send_update_invalid_id(test_client: TestClient) -> None:
     response = test_client.post("/api/v1/bot/updates", json=update_data)
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {"detail": "Некорректный id обновления"}
+    assert response.json() == {
+        "description": "Некорректные параметры запроса",
+        "code": "400",
+        "exceptionName": "ValueError",
+        "exceptionMessage": "Некорректный id обновления",
+        "stacktrace": response.json()["stacktrace"],
+    }
+    assert isinstance(response.json()["stacktrace"], list)
+    assert len(response.json()["stacktrace"]) > 0

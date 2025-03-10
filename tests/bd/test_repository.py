@@ -299,21 +299,21 @@ async def test_remove_link_success(
 
 
 async def test_remove_link_unregistered_chat(repository: Repository) -> None:
-    """Проверяет, что удаление ссылки для незарегистрированного чата выбрасывает KeyError."""
+    """Проверяет, что удаление ссылки для незарегистрированного чата выбрасывает ValueError."""
     remove_req = RemoveLinkRequest(link=HttpUrl("https://example.com"))
 
-    with pytest.raises(KeyError, match="Чат с идентификатором 123 не найден."):
+    with pytest.raises(ValueError, match="Чат с идентификатором 123 не найден."):
         await repository.remove_link(123, remove_req)
     assert repository.links == {}
 
 
 async def test_remove_link_nonexistent(repository: Repository) -> None:
-    """Проверяет, что удаление несуществующей ссылки выбрасывает ValueError."""
+    """Проверяет, что удаление несуществующей ссылки выбрасывает KeyError."""
     repository.chats = {123: True}
     repository.links = {123: []}
     remove_req = RemoveLinkRequest(link=HttpUrl("https://example.com/"))
 
-    with pytest.raises(ValueError, match="Ссылка https://example.com/ не найдена."):
+    with pytest.raises(KeyError, match="Ссылка https://example.com/ не найдена."):
         await repository.remove_link(123, remove_req)
     assert repository.links == {123: []}
 

@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import traceback
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import HttpUrl
+from starlette.responses import JSONResponse
 
 from src.api.bot_api.models import ApiErrorResponse, LinkUpdate
 from src.settings import settings
@@ -42,7 +44,7 @@ async def send_notification(
 
 @router.post(
     "/updates",
-    response_model=None,
+    response_model=LinkUpdate,
     summary="Отправить обновление",
     responses={
         200: {"description": "Обновление обработано"},
@@ -52,7 +54,7 @@ async def send_notification(
         },
     },
 )
-async def send_update(update: LinkUpdate) -> dict[str, str]:
+async def send_update(update: LinkUpdate) -> LinkUpdate | JSONResponse:
     """Отправляет обновление (LinkUpdate) в указанные Telegram-чаты.
 
     :param update: Объект обновления, содержащий id, url, описание и список tgChatIds.
@@ -60,7 +62,14 @@ async def send_update(update: LinkUpdate) -> dict[str, str]:
     :raises HTTPException: Если параметры запроса некорректны.
     """
     if update.id <= 0:
-        raise HTTPException(status_code=400, detail="Некорректный id обновления")
+        error_response = ApiErrorResponse(
+            description="Некорректные параметры запроса",
+            code="400",
+            exceptionName="ValueError",
+            exceptionMessage="Некорректный id обновления",
+            stacktrace=traceback.format_exc().split("\n"),
+        )
+        return JSONResponse(status_code=400, content=error_response.model_dump())
 
     logging.info("Получено обновление для ссылки: %s", update.url)
 
@@ -72,4 +81,4 @@ async def send_update(update: LinkUpdate) -> dict[str, str]:
             ),
         )
 
-    return {"message": f"Обновление для {update.url} обработано"}
+    return update
