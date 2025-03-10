@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Optional
+from typing import Any, DefaultDict
 
 from src.bd.memory_storage.enum_states import State
 from src.singleton import SingletonMeta
@@ -33,7 +33,7 @@ class MemoryStorageRecord:
     """
 
     data: dict[str, Any] = field(default_factory=dict)
-    state: Optional[State] = None
+    state: State | None = None
 
 
 class MemoryStorage(metaclass=SingletonMeta):
@@ -53,7 +53,7 @@ class MemoryStorage(metaclass=SingletonMeta):
             MemoryStorageRecord,
         )
 
-    async def set_state(self, key: StorageKey, state: Optional[State] = None) -> None:
+    async def set_state(self, key: StorageKey, state: State | None = None) -> None:
         """Устанавливает состояние для указанного ключа.
 
         :param key: Ключ для доступа к записи (StorageKey).
@@ -62,7 +62,7 @@ class MemoryStorage(metaclass=SingletonMeta):
         """
         self.storage[key].state = state
 
-    async def get_state(self, key: StorageKey) -> Optional[State]:
+    async def get_state(self, key: StorageKey) -> State | None:
         """Получает состояние для указанного ключа.
 
         :param key: Ключ для доступа к записи (StorageKey).
@@ -81,7 +81,7 @@ class MemoryStorage(metaclass=SingletonMeta):
         """
         self.storage[key].data = data.copy()
 
-    async def get_data(self, key: StorageKey) -> Optional[dict[str, Any]]:
+    async def get_data(self, key: StorageKey) -> dict[str, Any] | None:
         """Получает данные для указанного ключа.
 
         :param key: Ключ для доступа к записи (StorageKey).

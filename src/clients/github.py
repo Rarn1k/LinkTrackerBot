@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -17,17 +17,18 @@ class GitHubClient:
     BASE_URL: str = "https://api.github.com"
     ACCEPT_HEADER: str = "application/vnd.github+json"
 
-    def __init__(self, token: Optional[str] = None) -> None:
+    def __init__(self, token: str | None = None, base_url: str = BASE_URL) -> None:
         """Инициализирует клиент c опциональным токеном авторизации.
 
         :param token: Токен доступа GitHub для аутентифицированных запросов.
                       Если указан, добавляется в заголовок Authorization.
         """
+        self.base_url = base_url
         self.headers = {"Accept": self.ACCEPT_HEADER}
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
 
-    async def get_repo_events(self, owner: str, repo: str) -> Optional[Any]:  # noqa: ANN401
+    async def get_repo_events(self, owner: str, repo: str) -> Any:  # noqa: ANN401
         """Получает список событий репозитория.
 
         Запрашивает данные через эндпоинт /repos/{owner}/{repo}/events.
@@ -39,7 +40,7 @@ class GitHubClient:
         :raises ValueError: Если репозиторий не найден (статус 404).
         :raises httpx.HTTPStatusError: Если сервер вернул другую ошибку (например, 403, 429).
         """
-        url = f"{self.BASE_URL}/repos/{owner}/{repo}/events"
+        url = f"{self.base_url}/repos/{owner}/{repo}/events"
         async with httpx.AsyncClient(headers=self.headers) as client:
             try:
                 response = await client.get(url)
@@ -50,7 +51,7 @@ class GitHubClient:
                     raise ValueError(f"Репозиторий {owner}/{repo} не найден") from e
                 return None
 
-    async def check_updates(self, owner: str, repo: str, last_check: Optional[datetime]) -> bool:
+    async def check_updates(self, owner: str, repo: str, last_check: datetime | None) -> bool:
         """Проверяет, были ли новые события в репозитории после последней проверки.
 
         Сравнивает время создания последнего события (created_at) c указанным временем проверки.

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -17,23 +17,26 @@ class StackOverflowClient:
     BASE_URL = "https://api.stackexchange.com/2.3"
     DEFAULT_SITE = "stackoverflow"
 
-    def __init__(self, api_key: Optional[str] = None, site: str = DEFAULT_SITE) -> None:
+    def __init__(
+        self, base_url: str = BASE_URL, api_key: str | None = None, site: str = DEFAULT_SITE,
+    ) -> None:
         """Инициализирует клиент c опциональным API-ключом и сайтом.
 
         :param api_key: Ключ API для увеличения лимита запросов.
         :param site: Сайт StackExchange (по умолчанию 'stackoverflow').
         """
+        self.base_url = base_url
         self.api_key = api_key
         self.site = site
 
-    async def get_question(self, question_id: str) -> Optional[Any]:  # noqa: ANN401
+    async def get_question(self, question_id: str) -> Any:  # noqa: ANN401
         """Получает информацию o вопросе по ID.
 
         :param question_id: ID вопроса на StackOverflow.
         :return: Словарь c данными вопроса или None, если запрос неуспешен.
         :raises httpx.HTTPStatusError: Если сервер вернул ошибку (например, 400, 403).
         """
-        url = f"{self.BASE_URL}/questions/{question_id}"
+        url = f"{self.base_url}/questions/{question_id}"
         params = {"site": self.site}
         if self.api_key:
             params["key"] = self.api_key
@@ -52,7 +55,7 @@ class StackOverflowClient:
                     raise ValueError(f"Некорректный запрос для вопроса {question_id}") from e
                 return None
 
-    async def check_updates(self, question_id: str, last_check: Optional[datetime]) -> bool:
+    async def check_updates(self, question_id: str, last_check: datetime | None) -> bool:
         """Проверяет, были ли обновления вопроса после последней проверки.
 
         :param question_id: ID вопроса на StackOverflow.

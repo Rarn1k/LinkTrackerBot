@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 from pydantic.alias_generators import to_camel
@@ -52,7 +51,7 @@ class LinkResponse(BaseModel):
     url: HttpUrl = Field(...)
     tags: list[str] = Field(...)
     filters: list[str] = Field(...)
-    last_updated: Optional[datetime] = Field(None)
+    last_updated: datetime | None = Field(None)
 
     model_config = {
         "json_schema_extra": {

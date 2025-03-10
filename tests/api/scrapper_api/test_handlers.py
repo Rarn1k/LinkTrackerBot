@@ -19,7 +19,7 @@ async def test_register_chat_success(test_client: TestClient, mocker: MockerFixt
 
     response = test_client.post(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"message": "Чат зарегистрирован"}
+    assert response.json() == {"description": "Чат зарегистрирован"}
     mock_repo.assert_awaited_once_with(tg_chat_id)
 
 
@@ -52,7 +52,7 @@ async def test_delete_chat_success(test_client: TestClient, mocker: MockerFixtur
 
     response = test_client.delete(f"{settings.scrapper_api_url}/tg-chat/{tg_chat_id}")
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"message": "Чат успешно удалён"}
+    assert response.json() == {"description": "Чат успешно удалён"}
     mock_repo.assert_awaited_once_with(tg_chat_id)
 
 
@@ -103,7 +103,8 @@ async def test_get_links_success(test_client: TestClient, mocker: MockerFixture)
     mock_repo.return_value = []
 
     response = test_client.get(
-        f"{settings.scrapper_api_url}/links", headers={"Tg-Chat-Id": str(tg_chat_id)},
+        f"{settings.scrapper_api_url}/links",
+        headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"links": [], "size": 0}
@@ -119,7 +120,8 @@ async def test_get_links_invalid_header(test_client: TestClient, mocker: MockerF
     )
 
     response = test_client.get(
-        f"{settings.scrapper_api_url}/links", headers={"Tg-Chat-Id": str(tg_chat_id)},
+        f"{settings.scrapper_api_url}/links",
+        headers={"Tg-Chat-Id": str(tg_chat_id)},
     )
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json() == {

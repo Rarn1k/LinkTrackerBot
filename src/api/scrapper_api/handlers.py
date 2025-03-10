@@ -48,7 +48,7 @@ async def register_chat_endpoint(
             stacktrace=traceback.format_exc().split("\n"),
         )
         return JSONResponse(status_code=400, content=error_response.model_dump(by_alias=True))
-    return {"message": "Чат зарегистрирован"}
+    return {"description": "Чат зарегистрирован"}
 
 
 @router.delete(
@@ -96,7 +96,7 @@ async def delete_chat_endpoint(
             stacktrace=traceback.format_exc().split("\n"),
         )
         return JSONResponse(status_code=404, content=error_response.model_dump(by_alias=True))
-    return {"message": "Чат успешно удалён"}
+    return {"description": "Чат успешно удалён"}
 
 
 @router.get(
