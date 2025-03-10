@@ -15,6 +15,7 @@ class TGBotSettings(BaseSettings):
     token: str = Field(...)
     scrapper_api_url: str = "http://localhost:7777/api/v1/scrapper"
     bot_api_url: str = "http://localhost:7777/api/v1/bot"
+    tg_api_url: str = "https://api.telegram.org"
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",

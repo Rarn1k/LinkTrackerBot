@@ -26,8 +26,7 @@ async def send_notification(
     :param url: Ссылка, для которой отправляется уведомление.
     :param description: Описание обновления.
     """
-    token = settings.token
-    telegram_api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+    telegram_api_url = f"{settings.tg_api_url}/bot{settings.token}/sendMessage"
 
     payload = {
         "chat_id": chat_id,
