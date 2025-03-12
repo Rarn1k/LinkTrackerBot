@@ -1,4 +1,3 @@
-
 import httpx
 from pydantic import ValidationError
 from telethon.events import NewMessage
