@@ -1,10 +1,11 @@
-import json
 
 import httpx
+from pydantic import ValidationError
 from telethon.events import NewMessage
 
 __all__ = ("untrack_handler",)
 
+from src.api.scrapper_api.models import RemoveLinkRequest
 from src.settings import settings
 
 EXPECTED_TRACK_PARTS: int = 2
@@ -30,13 +31,20 @@ async def untrack_handler(event: NewMessage.Event) -> None:
         return
 
     url = parts[1].strip()
+
+    try:
+        untrack_data = RemoveLinkRequest(link=url)
+    except ValidationError:
+        await event.respond("Введён некорректный формат ссылки")
+        return
+
     headers = {"Tg-Chat-Id": str(event.chat_id)}
     async with httpx.AsyncClient() as client:
         try:
             response = await client.request(
                 "DELETE",
                 f"{settings.scrapper_api_url}/links",
-                content=json.dumps({"link": url}),
+                content=untrack_data.model_dump_json(),
                 headers=headers,
             )
             response.raise_for_status()

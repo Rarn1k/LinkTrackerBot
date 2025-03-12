@@ -83,7 +83,8 @@ async def test_get_repo_events_timeout(mocker: MockerFixture, settings: ClientSe
 
 
 async def test_get_repo_events_not_found(
-    mock_http_client_not_found: AsyncMock, settings: ClientSettings,
+    mock_http_client_not_found: AsyncMock,
+    settings: ClientSettings,
 ) -> None:
     """Репозиторий не найден (статус 404)."""
     owner = "octocat"
@@ -112,7 +113,8 @@ async def test_check_updates_true(mock_http_client_ok: AsyncMock, settings: Clie
 
 
 async def test_check_updates_false(
-    mock_http_client_ok: AsyncMock, settings: ClientSettings,
+    mock_http_client_ok: AsyncMock,
+    settings: ClientSettings,
 ) -> None:
     """Нет обновлений после last_check."""
     owner = "octocat"
