@@ -16,24 +16,20 @@ class StackOverflowClient:
     помощью StackExchange API.
     """
 
-    DEFAULT_SITE = "stackoverflow"
-
     def __init__(
         self,
         settings: ClientSettings = default_settings,
         api_key: str | None = None,
-        site: str = DEFAULT_SITE,
     ) -> None:
         """Инициализирует клиент c опциональным API-ключом и сайтом.
 
         :param settings: Настройки c URL-адресами и тайм-аутами.
         :param api_key: Ключ API для увеличения лимита запросов.
-        :param site: Сайт StackExchange (по умолчанию 'stackoverflow').
         """
         self.base_url = settings.stackoverflow_api_url
         self.timeout = settings.client_timeout
         self.api_key = api_key
-        self.site = site
+        self.site = settings.stackoverflow_default_site
 
     async def get_question(self, question_id: str) -> Any:  # noqa: ANN401
         """Получает информацию o вопросе по ID.

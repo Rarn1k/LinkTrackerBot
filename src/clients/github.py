@@ -16,8 +16,6 @@ class GitHubClient:
     например, для проверки активности (новые коммиты, pull request'ы, и т.д.).
     """
 
-    ACCEPT_HEADER: str = "application/vnd.github+json"
-
     def __init__(
         self,
         settings: ClientSettings = default_settings,
@@ -31,7 +29,7 @@ class GitHubClient:
         """
         self.base_url = settings.github_api_url
         self.timeout = settings.client_timeout
-        self.headers = {"Accept": self.ACCEPT_HEADER}
+        self.headers = {"Accept": settings.github_api_url}
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
 
