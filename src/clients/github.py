@@ -3,6 +3,8 @@ from typing import Any
 
 import httpx
 
+from src.clients.client_settings import ClientSettings, default_settings
+
 
 class GitHubClient:
     """HTTP-клиент для обращения к GitHub API.
@@ -14,16 +16,21 @@ class GitHubClient:
     например, для проверки активности (новые коммиты, pull request'ы, и т.д.).
     """
 
-    BASE_URL: str = "https://api.github.com"
     ACCEPT_HEADER: str = "application/vnd.github+json"
 
-    def __init__(self, token: str | None = None, base_url: str = BASE_URL) -> None:
+    def __init__(
+        self,
+        settings: ClientSettings = default_settings,
+        token: str | None = None,
+    ) -> None:
         """Инициализирует клиент c опциональным токеном авторизации.
 
+        :param settings: Настройки c URL-адресами и тайм-аутами.
         :param token: Токен доступа GitHub для аутентифицированных запросов.
                       Если указан, добавляется в заголовок Authorization.
         """
-        self.base_url = base_url
+        self.base_url = settings.github_api_url
+        self.timeout = settings.client_timeout
         self.headers = {"Accept": self.ACCEPT_HEADER}
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
@@ -43,9 +50,11 @@ class GitHubClient:
         url = f"{self.base_url}/repos/{owner}/{repo}/events"
         async with httpx.AsyncClient(headers=self.headers) as client:
             try:
-                response = await client.get(url)
+                response = await client.get(url, timeout=self.timeout)
                 response.raise_for_status()
                 return response.json()
+            except httpx.TimeoutException as e:
+                raise TimeoutError(f"Превышено время ожидания запроса к {url}") from e
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == httpx.codes.NOT_FOUND:
                     raise ValueError(f"Репозиторий {owner}/{repo} не найден") from e
@@ -64,6 +73,8 @@ class GitHubClient:
         if last_check is None:
             return True
         events = await self.get_repo_events(owner, repo)
+        if not events:
+            return False
         if events and isinstance(events, list):
             latest_event = max(events, key=lambda e: e.get("created_at", "1970-01-01T00:00:00"))
             latest_event_date = datetime.fromisoformat(

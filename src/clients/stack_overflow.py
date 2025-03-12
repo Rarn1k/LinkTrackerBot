@@ -3,6 +3,8 @@ from typing import Any
 
 import httpx
 
+from src.clients.client_settings import ClientSettings, default_settings
+
 
 class StackOverflowClient:
     """HTTP-клиент для обращения к StackOverflow API.
@@ -14,18 +16,22 @@ class StackOverflowClient:
     помощью StackExchange API.
     """
 
-    BASE_URL = "https://api.stackexchange.com/2.3"
     DEFAULT_SITE = "stackoverflow"
 
     def __init__(
-        self, base_url: str = BASE_URL, api_key: str | None = None, site: str = DEFAULT_SITE,
+        self,
+        settings: ClientSettings = default_settings,
+        api_key: str | None = None,
+        site: str = DEFAULT_SITE,
     ) -> None:
         """Инициализирует клиент c опциональным API-ключом и сайтом.
 
+        :param settings: Настройки c URL-адресами и тайм-аутами.
         :param api_key: Ключ API для увеличения лимита запросов.
         :param site: Сайт StackExchange (по умолчанию 'stackoverflow').
         """
-        self.base_url = base_url
+        self.base_url = settings.stackoverflow_api_url
+        self.timeout = settings.client_timeout
         self.api_key = api_key
         self.site = site
 
@@ -43,13 +49,15 @@ class StackOverflowClient:
 
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(url, params=params)
+                response = await client.get(url, params=params, timeout=self.timeout)
                 response.raise_for_status()
-                data = response.json()
-                if data is None or not data.get("items"):
+
+                data = response.json() or {}
+                if not data.get("items"):
                     return None
                 return data["items"][0]
-
+            except httpx.TimeoutException as e:
+                raise TimeoutError(f"Превышено время ожидания запроса к {url}") from e
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == httpx.codes.BAD_REQUEST:
                     raise ValueError(f"Некорректный запрос для вопроса {question_id}") from e
@@ -64,6 +72,7 @@ class StackOverflowClient:
         """
         if last_check is None:
             return True
+
         question = await self.get_question(question_id)
         if question and "last_activity_date" in question:
             last_activity_date = datetime.fromtimestamp(
