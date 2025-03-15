@@ -1,12 +1,18 @@
+import logging
 from datetime import datetime
 from typing import Any
+from urllib.parse import ParseResult
 
 import httpx
 
+from src.clients.base_client import BaseClient
 from src.clients.client_settings import ClientSettings, default_settings
 
+logger = logging.getLogger(__name__)
+EXPECTED_PATH_PARTS: int = 2
 
-class GitHubClient:
+
+class GitHubClient(BaseClient):
     """HTTP-клиент для обращения к GitHub API.
 
     Использует базовый URL, который можно задать при инициализации.
@@ -58,18 +64,22 @@ class GitHubClient:
                     raise ValueError(f"Репозиторий {owner}/{repo} не найден") from e
                 return None
 
-    async def check_updates(self, owner: str, repo: str, last_check: datetime | None) -> bool:
+    async def check_updates(self, parsed_url: ParseResult, last_check: datetime | None) -> bool:
         """Проверяет, были ли новые события в репозитории после последней проверки.
 
         Сравнивает время создания последнего события (created_at) c указанным временем проверки.
 
-        :param owner: Имя владельца репозитория (например, "octocat").
-        :param repo: Имя репозитория (например, "hello-world").
+        :param parsed_url: Ссылка на репозиторий.
         :param last_check: Время последней проверки для сравнения.
         :return: True, если есть новые события после last_check, иначе False.
         """
         if last_check is None:
             return True
+        path_parts = parsed_url.path.strip("/").split("/")
+        if len(path_parts) < EXPECTED_PATH_PARTS:
+            logger.warning("Некорректный path в GitHub URL: %s", parsed_url.path)
+            return False
+        owner, repo = path_parts[0], path_parts[1]
         events = await self.get_repo_events(owner, repo)
         if not events:
             return False

@@ -1,12 +1,17 @@
+import logging
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import ParseResult
 
 import httpx
 
+from src.clients.base_client import BaseClient
 from src.clients.client_settings import ClientSettings, default_settings
 
+logger = logging.getLogger(__name__)
 
-class StackOverflowClient:
+
+class StackOverflowClient(BaseClient):
     """HTTP-клиент для обращения к StackOverflow API.
 
     Использует базовый URL, который можно задать при инициализации.
@@ -59,16 +64,20 @@ class StackOverflowClient:
                     raise ValueError(f"Некорректный запрос для вопроса {question_id}") from e
                 return None
 
-    async def check_updates(self, question_id: str, last_check: datetime | None) -> bool:
+    async def check_updates(self, parsed_url: ParseResult, last_check: datetime | None) -> bool:
         """Проверяет, были ли обновления вопроса после последней проверки.
 
-        :param question_id: ID вопроса на StackOverflow.
+        :param parsed_url: Ссылка на вопрос.
         :param last_check: Время последней проверки.
         :return: True, если есть обновления, иначе False.
         """
         if last_check is None:
             return True
-
+        try:
+            question_id = parsed_url.path.split("/")[-2] or "0"
+        except IndexError:
+            logger.warning("Некорректный path в StackOverflow URL: %s", parsed_url.path)
+            return False
         question = await self.get_question(question_id)
         if question and "last_activity_date" in question:
             last_activity_date = datetime.fromtimestamp(
