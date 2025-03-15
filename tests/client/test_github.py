@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock
+from urllib.parse import urlparse
 
 import httpx
 import pytest
@@ -98,16 +99,15 @@ async def test_get_repo_events_not_found(
 
 async def test_check_updates_true(mock_http_client_ok: AsyncMock, settings: ClientSettings) -> None:
     """Ecть обновления после last_check."""
-    owner = "octocat"
-    repo = "Hello-World"
+    parsed_url = urlparse("https://github.com/octocat/Hello-World")
     last_check = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     client = GitHubClient(settings)
 
-    has_updates = await client.check_updates(owner, repo, last_check)
+    has_updates = await client.check_updates(parsed_url, last_check)
 
     assert has_updates is True
     mock_http_client_ok.assert_awaited_once_with(
-        f"{client.base_url}/repos/{owner}/{repo}/events",
+        f"{client.base_url}/repos/octocat/Hello-World/events",
         timeout=client.timeout,
     )
 
@@ -117,24 +117,22 @@ async def test_check_updates_false(
     settings: ClientSettings,
 ) -> None:
     """Нет обновлений после last_check."""
-    owner = "octocat"
-    repo = "Hello-World"
+    parsed_url = urlparse("https://github.com/octocat/Hello-World")
     last_check = datetime(2024, 3, 2, 0, 0, 0, tzinfo=timezone.utc)
     client = GitHubClient(settings)
 
-    has_updates = await client.check_updates(owner, repo, last_check)
+    has_updates = await client.check_updates(parsed_url, last_check)
 
     assert has_updates is False
     mock_http_client_ok.assert_awaited_once_with(
-        f"{client.base_url}/repos/{owner}/{repo}/events",
+        f"{client.base_url}/repos/octocat/Hello-World/events",
         timeout=client.timeout,
     )
 
 
 async def test_check_updates_no_events(mocker: MockerFixture, settings: ClientSettings) -> None:
     """Ошибке запроса."""
-    owner = "octocat"
-    repo = "Hello-World"
+    parsed_url = urlparse("https://github.com/octocat/Hello-World")
     last_check = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     client = GitHubClient(settings)
 
@@ -146,15 +144,15 @@ async def test_check_updates_no_events(mocker: MockerFixture, settings: ClientSe
 
     with pytest.raises(
         TimeoutError,
-        match=f"Превышено время ожидания запроса к {client.base_url}/repos/{owner}/{repo}/events",
+        match=f"Превышено время ожидания запроса к "
+        f"{client.base_url}/repos/octocat/Hello-World/events",
     ):
-        await client.check_updates(owner, repo, last_check)
+        await client.check_updates(parsed_url, last_check)
 
 
 async def test_check_updates_empty_events(mocker: MockerFixture, settings: ClientSettings) -> None:
     """Пустой спискок событий."""
-    owner = "octocat"
-    repo = "Hello-World"
+    parsed_url = urlparse("https://github.com/octocat/Hello-World")
     last_check = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     client = GitHubClient(settings)
 
@@ -167,10 +165,10 @@ async def test_check_updates_empty_events(mocker: MockerFixture, settings: Clien
         new=AsyncMock(return_value=mock_response),
     )
 
-    has_updates = await client.check_updates(owner, repo, last_check)
+    has_updates = await client.check_updates(parsed_url, last_check)
 
     assert has_updates is False
     mock_get.assert_awaited_once_with(
-        f"{client.base_url}/repos/{owner}/{repo}/events",
+        f"{client.base_url}/repos/octocat/Hello-World/events",
         timeout=client.timeout,
     )

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock
+from urllib.parse import urlparse
 
 import httpx
 import pytest
@@ -147,15 +148,15 @@ async def test_get_question_not_found(mocker: MockerFixture, settings: ClientSet
 
 async def test_check_updates_true(mock_http_client_ok: AsyncMock, settings: ClientSettings) -> None:
     """Есть обновления после последней проверки."""
-    question_id = "123"
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/123/")
     last_check = datetime(2024, 3, 1, 0, 0, 0, tzinfo=timezone.utc)  # 2024-03-01
     client = StackOverflowClient(settings=settings)
 
-    has_updates = await client.check_updates(question_id, last_check)
+    has_updates = await client.check_updates(parsed_url, last_check)
 
     assert has_updates is True
     mock_http_client_ok.assert_awaited_once_with(
-        f"{client.base_url}/questions/{question_id}",
+        f"{client.base_url}/questions/123",
         params={"site": "stackoverflow"},
         timeout=client.timeout,
     )
@@ -163,7 +164,7 @@ async def test_check_updates_true(mock_http_client_ok: AsyncMock, settings: Clie
 
 async def test_check_updates_false(mocker: MockerFixture, settings: ClientSettings) -> None:
     """Нет обновлений после последней проверки."""
-    question_id = "123"
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/123/")
     last_check = datetime(2024, 3, 4, 0, 0, 0, tzinfo=timezone.utc)  # 2024-03-04
     client = StackOverflowClient(settings=settings)
 
@@ -181,11 +182,11 @@ async def test_check_updates_false(mocker: MockerFixture, settings: ClientSettin
         new=AsyncMock(return_value=mock_response),
     )
 
-    has_updates = await client.check_updates(question_id, last_check)
+    has_updates = await client.check_updates(parsed_url, last_check)
 
     assert has_updates is False  # last_activity_date: 2024-03-03 < last_check
     mock_get.assert_awaited_once_with(
-        f"{client.base_url}/questions/{question_id}",
+        f"{client.base_url}/questions/123",
         params={"site": "stackoverflow"},
         timeout=client.timeout,
     )
@@ -196,15 +197,15 @@ async def test_check_updates_no_question(
     settings: ClientSettings,
 ) -> None:
     """Вопрос не найден, обновлений нет."""
-    question_id = "invalid_id"
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/invalid_id/")
     last_check = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     client = StackOverflowClient(settings)
 
-    with pytest.raises(ValueError, match=f"Некорректный запрос для вопроса {question_id}"):
-        await client.check_updates(question_id, last_check)
+    with pytest.raises(ValueError, match="Некорректный запрос для вопроса invalid_id"):
+        await client.check_updates(parsed_url, last_check)
 
     mock_http_client_not_found.assert_awaited_once_with(
-        f"{client.base_url}/questions/{question_id}",
+        f"{client.base_url}/questions/invalid_id",
         params={"site": "stackoverflow"},
         timeout=client.timeout,
     )
