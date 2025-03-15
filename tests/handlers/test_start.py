@@ -45,7 +45,7 @@ async def test_start_handler_http_error(
     """Обработка команды /start c HTTP-ошибкой при регистрации чата."""
     mock_response = Mock(spec=httpx.Response)
     mock_response.status_code = status_code
-    mock_response.json.return_value = {"detail": error_detail}
+    mock_response.json.return_value = {"exceptionMessage": error_detail}
     mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         message=f"{status_code} Ошибка",
         request=Mock(),

@@ -70,7 +70,7 @@ async def test_list_handler_http_error(
 ) -> None:
     """Обработка HTTP-ошибок при получении подписок."""
     mock_response = Mock(spec=httpx.Response)
-    mock_response.json.return_value = {"detail": error_detail}
+    mock_response.json.return_value = {"exceptionMessage": error_detail}
     mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         message=f"{status_code} Error",
         request=Mock(),

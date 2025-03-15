@@ -23,7 +23,7 @@ async def list_handler(event: NewMessage.Event) -> None:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             await event.respond(
-                f"Ошибка при получении подписок: {e.response.json().get('detail')!s}",
+                f"Ошибка при получении подписок: {e.response.json().get('exceptionMessage')!s}",
             )
             return
 

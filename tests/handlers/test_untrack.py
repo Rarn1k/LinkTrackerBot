@@ -78,7 +78,7 @@ async def test_untrack_handler_http_error(
     mock_event.message.message = "/untrack https://example.com"
     mock_response = Mock(spec=httpx.Response)
     mock_response.status_code = status_code
-    mock_response.json.return_value = {"detail": error_detail}
+    mock_response.json.return_value = {"exceptionMessage": error_detail}
     mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         message=f"{status_code} Error",
         request=Mock(),

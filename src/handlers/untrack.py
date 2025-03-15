@@ -2,12 +2,11 @@ import httpx
 from pydantic import ValidationError
 from telethon.events import NewMessage
 
-__all__ = ("untrack_handler",)
-
 from src.api.scrapper_api.models import RemoveLinkRequest
+from src.constants import EXPECTED_TRACK_PARTS
 from src.settings import settings
 
-EXPECTED_TRACK_PARTS: int = 2
+__all__ = ("untrack_handler",)
 
 
 async def untrack_handler(event: NewMessage.Event) -> None:
@@ -52,7 +51,7 @@ async def untrack_handler(event: NewMessage.Event) -> None:
                 await event.respond("Введён некорректный формат ссылки")
             else:
                 await event.respond(
-                    f"Ошибка при удалении подписки: {e.response.json().get('detail')!s}",
+                    f"Ошибка при удалении подписки: {e.response.json().get('exceptionMessage')!s}",
                 )
             return
     await event.respond(f"Ссылка {url} удалена из отслеживаемых.")

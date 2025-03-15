@@ -23,7 +23,9 @@ async def start_handler(
             response = await client.post(f"{settings.scrapper_api_url}/tg-chat/{event.chat_id}")
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            await event.respond(f"Ошибка регистрации чата: {e.response.json().get('detail')!s}")
+            await event.respond(
+                f"Ошибка регистрации чата: {e.response.json().get('exceptionMessage')!s}",
+            )
             return
     await event.client.send_message(
         entity=event.input_chat,

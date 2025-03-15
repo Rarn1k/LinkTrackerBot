@@ -3,10 +3,9 @@ from telethon.events import NewMessage
 from src.bd.memory_storage.enum_states import State
 from src.bd.memory_storage.key_builder import build_storage_key
 from src.bd.memory_storage.memory import MemoryStorage
+from src.constants import EXPECTED_TRACK_PARTS
 
 __all__ = ("track_handler",)
-
-EXPECTED_TRACK_PARTS: int = 2
 
 
 async def track_handler(

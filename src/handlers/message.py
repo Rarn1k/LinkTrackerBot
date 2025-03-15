@@ -9,9 +9,6 @@ from src.settings import settings
 __all__ = ("msg_handler",)
 
 
-EXPECTED_TRACK_PARTS: int = 2
-
-
 async def msg_handler(event: NewMessage.Event) -> None:
     """Обрабатывает входящие сообщения, связанные c диалогом добавления подписки.
 
@@ -82,7 +79,8 @@ async def msg_handler(event: NewMessage.Event) -> None:
                     await event.respond("Введён некорректный формат ссылки")
                 else:
                     await event.respond(
-                        f"Ошибка при добавлении подписки: {e.response.json().get('detail')!s}.\n"
+                        f"Ошибка при добавлении подписки: "
+                        f"{e.response.json().get("exceptionMessage")!s}\n"
                         f"Для корректной работы данной команды необходимо сначала "
                         f"зарегистрировать чат с помощью команды /start.",
                     )
