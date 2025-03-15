@@ -80,7 +80,7 @@ async def msg_handler(event: NewMessage.Event) -> None:
                 else:
                     await event.respond(
                         f"Ошибка при добавлении подписки: "
-                        f"{e.response.json().get("exceptionMessage")!s}\n"
+                        f"{e.response.json().get('exceptionMessage')!s}\n"
                         f"Для корректной работы данной команды необходимо сначала "
                         f"зарегистрировать чат с помощью команды /start.",
                     )
