@@ -63,3 +63,34 @@ class LinkUpdate(BaseModel):
             ],
         },
     }
+
+
+class DigestUpdate(BaseModel):
+    """Модель отправки дайджеста.
+
+    :param id: Идентификатор дайджеста.
+    :param description: Описание дайджеста.
+    :param tg_chat_id: ID Telegram-чата, куда необходимо отправить дайджест.
+    :param updates: Список из сообщений co ссылками, в которых было обновление.
+    """
+
+    id: int = Field(...)
+    description: str = Field(...)
+    tg_chat_id: int = Field(...)
+    updates: list[str] = Field(...)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": 1,
+                    "description": "Полученные обновления: ",
+                    "tg_chat_id": 123456789,
+                    "updates": [
+                        "Обновление на https://example.com!",
+                        "Обновление на https://another.com!",
+                    ],
+                },
+            ],
+        },
+    }

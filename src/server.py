@@ -17,9 +17,11 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
-from src.scheduler import check_updates
+from src.scheduler import send_digest
 from src.settings import TGBotSettings
 
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
 
     logger.debug("Running application lifespan ...")
-    task = asyncio.create_task(check_updates(362682717))
+    task = asyncio.create_task(send_digest())
 
     loop = asyncio.get_event_loop()
     loop.set_default_executor(
