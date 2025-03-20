@@ -10,9 +10,9 @@ __all__ = ("TGBotSettings", "settings")
 class TGBotSettings(BaseSettings):
     debug: bool = Field(default=False)
 
-    api_id: int
-    api_hash: str
-    token: str
+    api_id: int = Field(default=12345)
+    api_hash: str = Field(default="default_hash")
+    token: str = Field(default="default_token")
     scrapper_api_url: str = "http://localhost:7777/api/v1/scrapper"
     bot_api_url: str = "http://localhost:7777/api/v1/bot"
     tg_api_url: str = "https://api.telegram.org"
