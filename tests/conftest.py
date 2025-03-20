@@ -3,6 +3,7 @@ from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
@@ -43,6 +44,13 @@ def mock_memory_storage(mocker: MockerFixture) -> Mock:
     storage.set_data = mocker.AsyncMock()
     storage.clear = mocker.AsyncMock()
     return storage
+
+
+@pytest.fixture(autouse=True)
+def override_settings(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("BOT_API_ID", "123456")
+    monkeypatch.setenv("BOT_API_HASH", "fakehash")
+    monkeypatch.setenv("BOT_TOKEN", "faketoken")
 
 
 @pytest.fixture(scope="session")
