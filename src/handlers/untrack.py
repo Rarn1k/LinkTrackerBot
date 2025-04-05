@@ -42,7 +42,7 @@ async def untrack_handler(event: NewMessage.Event) -> None:
             response = await client.request(
                 "DELETE",
                 f"{settings.scrapper_api_url}/links",
-                content=untrack_data.model_dump_json(),
+                json=untrack_data.model_dump(mode="json"),
                 headers=headers,
             )
             response.raise_for_status()

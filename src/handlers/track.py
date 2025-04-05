@@ -1,9 +1,9 @@
 from telethon.events import NewMessage
 
-from src.bd.memory_storage.enum_states import State
-from src.bd.memory_storage.key_builder import build_storage_key
-from src.bd.memory_storage.memory import MemoryStorage
 from src.constants import EXPECTED_TRACK_PARTS
+from src.db.in_memory.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.key_builder import build_storage_key
+from src.db.in_memory.memory_storage.memory import MemoryStorage
 
 __all__ = ("track_handler",)
 

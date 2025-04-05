@@ -1,12 +1,53 @@
 import httpx
+from pydantic import HttpUrl
 from telethon.events import NewMessage
 
-from src.bd.memory_storage.enum_states import State
-from src.bd.memory_storage.key_builder import build_storage_key
-from src.bd.memory_storage.memory import MemoryStorage
+from src.api.scrapper_api.models import AddLinkRequest
+from src.db.in_memory.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.key_builder import build_storage_key
+from src.db.in_memory.memory_storage.memory import MemoryStorage
 from src.settings import settings
 
 __all__ = ("msg_handler",)
+
+
+async def _send_scrapper_request(
+    event: NewMessage.Event,
+    url: str,
+    tags: list[str],
+    filters: list[str],
+) -> None:
+    """
+    Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
+
+    :param event: Событие Telethon с данными Telegram-сообщения.
+    :param url: Ссылка, которую необходимо отслеживать.
+    :param tags: Список тегов, которые пользователь указал для ссылки.
+    :param filters: Список фильтров, применяемых к обновлениям по ссылке.
+    :return: None
+    :raises httpx.HTTPStatusError: В случае ошибки HTTP-запроса.
+    """
+    payload = AddLinkRequest(link=HttpUrl(url), tags=tags, filters=filters)
+    headers = {"Tg-Chat-Id": str(event.chat_id)}
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{settings.scrapper_api_url}/links",
+                json=payload.model_dump(mode="json"),
+                headers=headers,
+            )
+            response.raise_for_status()
+            await event.respond(f"Ссылка {url} добавлена для отслеживания.")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == httpx.codes.UNPROCESSABLE_ENTITY:
+                await event.respond("Введён некорректный формат ссылки")
+            else:
+                await event.respond(
+                    f"Ошибка при добавлении подписки: "
+                    f"{e.response.json().get('exceptionMessage')!s}\n"
+                    f"Для корректной работы данной команды необходимо сначала "
+                    f"зарегистрировать чат с помощью команды /start.",
+                )
 
 
 async def msg_handler(event: NewMessage.Event) -> None:
@@ -36,8 +77,8 @@ async def msg_handler(event: NewMessage.Event) -> None:
 
     if current_state == State.WAITING_FOR_TAGS:
         tags = event.raw_text.split()
-        data = await memory_storage.get_data(key)
-        if data is None:
+        data = await memory_storage.get_data(key) or {}
+        if not data:
             await event.respond(msg_to_start)
             return
         data["tags"] = tags
@@ -46,44 +87,21 @@ async def msg_handler(event: NewMessage.Event) -> None:
         await event.respond(
             "Введите фильтры (опционально, формат key:value, разделённые пробелами):",
         )
+        return
 
-    elif current_state == State.WAITING_FOR_FILTERS:
-        filters_input = event.raw_text.split()
-
-        data = await memory_storage.get_data(key)
-        if data is None:
+    if current_state == State.WAITING_FOR_FILTERS:
+        filters = event.raw_text.split()
+        data = await memory_storage.get_data(key) or {}
+        if not data:
             await event.respond(msg_to_start)
             return
-        data["filters"] = filters_input
+        data["filters"] = filters
         await memory_storage.set_data(key, data)
 
         url = data.get("url")
-        tags = data.get("tags", [])
+        if not url:
+            await event.respond(msg_to_start)
+            return
 
-        payload = {
-            "link": url,
-            "tags": tags,
-            "filters": filters_input,
-        }
-        headers = {"Tg-Chat-Id": str(event.chat_id)}
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    f"{settings.scrapper_api_url}/links",
-                    json=payload,
-                    headers=headers,
-                )
-                response.raise_for_status()
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == httpx.codes.UNPROCESSABLE_ENTITY:
-                    await event.respond("Введён некорректный формат ссылки")
-                else:
-                    await event.respond(
-                        f"Ошибка при добавлении подписки: "
-                        f"{e.response.json().get('exceptionMessage')!s}\n"
-                        f"Для корректной работы данной команды необходимо сначала "
-                        f"зарегистрировать чат с помощью команды /start.",
-                    )
-                return
-        await event.respond(f"Ссылка {url} добавлена для отслеживания.")
+        await _send_scrapper_request(event, url, data.get("tags", []), filters)
         await memory_storage.clear(key)

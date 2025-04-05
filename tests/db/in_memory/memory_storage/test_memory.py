@@ -2,8 +2,8 @@ from typing import Any, Generator
 
 import pytest
 
-from src.bd.memory_storage.enum_states import State
-from src.bd.memory_storage.memory import MemoryStorage, StorageKey
+from src.db.in_memory.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.memory import MemoryStorage, StorageKey
 
 pytestmark = pytest.mark.asyncio
 

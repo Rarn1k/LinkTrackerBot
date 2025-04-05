@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, HttpUrl
 from pydantic.alias_generators import to_camel
 
@@ -87,9 +89,47 @@ class DigestUpdate(BaseModel):
                     "description": "Полученные обновления: ",
                     "tg_chat_id": 123456789,
                     "updates": [
-                        "Обновление на https://example.com!",
-                        "Обновление на https://another.com!",
+                        "*Как работает async в Python?* (by JohnDoe)\n 2024-06-01 12:30"
+                        "\nasyncio позволяет выполнять конкурентные операции без потоков...",
+                        "*Fix memory leak in database connection* (by JaneDev)\n 2024-06-02 15:45"
+                        "\nЭтот PR исправляет утечку памяти в модуле обработки транзакций...",
                     ],
+                },
+            ],
+        },
+    }
+
+
+class UpdateEvent(BaseModel):
+    """Модель обновления для различных платформ (StackOverflow, GitHub).
+
+    :param description: Описание обновления
+    :param title: Заголовок вопроса, PR или Issue.
+    :param username: Имя пользователя, который создал запись.
+    :param created_at: Время создания записи в UTC.
+    :param preview: Превью ответа или описания (первые 200 символов).
+    """
+
+    description: str = Field()
+    title: str = Field(...)
+    username: str = Field(...)
+    created_at: datetime = Field(...)
+    preview: str = Field(..., max_length=200)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "title": "Как работает async в Python?",
+                    "username": "JohnDoe",
+                    "created_at": "2024-06-01T12:30:00Z",
+                    "preview": "asyncio позволяет выполнять конкурентные операции без потоков...",
+                },
+                {
+                    "title": "Fix memory leak in database connection",
+                    "username": "JaneDev",
+                    "created_at": "2024-06-02T15:45:00Z",
+                    "preview": "Этот PR исправляет утечку памяти в модуле обработки транзакций...",
                 },
             ],
         },

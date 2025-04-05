@@ -1,6 +1,6 @@
 from telethon.events import NewMessage
 
-from src.bd.memory_storage.memory import StorageKey
+from src.db.in_memory.memory_storage.memory import StorageKey
 
 
 async def build_storage_key(event: NewMessage.Event) -> StorageKey:
