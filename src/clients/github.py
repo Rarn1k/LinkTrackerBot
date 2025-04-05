@@ -5,6 +5,7 @@ from urllib.parse import ParseResult
 
 import httpx
 
+from src.api.bot_api.models import UpdateEvent
 from src.clients.base_client import BaseClient
 from src.clients.client_settings import ClientSettings, default_settings
 
@@ -33,13 +34,13 @@ class GitHubClient(BaseClient):
         :param token: Токен доступа GitHub для аутентифицированных запросов.
                       Если указан, добавляется в заголовок Authorization.
         """
-        self.base_url = settings.github_api_url
+        self.base_url = settings.github.api_url
         self.timeout = settings.client_timeout
-        self.headers = {"Accept": settings.github_api_url}
+        self.headers = {"Accept": settings.github.accept_header}
         if token:
             self.headers["Authorization"] = f"Bearer {token}"
 
-    async def get_repo_events(self, owner: str, repo: str) -> Any:  # noqa: ANN401
+    async def get_repo_events(self, owner: str, repo: str) -> Any | None:  # noqa: ANN401
         """Получает список событий репозитория.
 
         Запрашивает данные через эндпоинт /repos/{owner}/{repo}/events.
@@ -64,29 +65,67 @@ class GitHubClient(BaseClient):
                     raise ValueError(f"Репозиторий {owner}/{repo} не найден") from e
                 return None
 
-    async def check_updates(self, parsed_url: ParseResult, last_check: datetime | None) -> bool:
-        """Проверяет, были ли новые события в репозитории после последней проверки.
-
-        Сравнивает время создания последнего события (created_at) c указанным временем проверки.
-
-        :param parsed_url: Ссылка на репозиторий.
-        :param last_check: Время последней проверки для сравнения.
-        :return: True, если есть новые события после last_check, иначе False.
-        """
-        if last_check is None:
-            return True
+    @staticmethod
+    async def _parse_repo_path(parsed_url: ParseResult) -> tuple[str, str] | None:
+        """Извлекает owner и repo из URL."""
         path_parts = parsed_url.path.strip("/").split("/")
         if len(path_parts) < EXPECTED_PATH_PARTS:
             logger.warning("Некорректный path в GitHub URL: %s", parsed_url.path)
-            return False
-        owner, repo = path_parts[0], path_parts[1]
+            return None
+        return path_parts[0], path_parts[1]
+
+    @staticmethod
+    async def _create_update_event(
+        event: dict[str, Any],
+        parsed_url: ParseResult,
+    ) -> UpdateEvent | None:
+        """Создаёт объект UpdateEvent из события GitHub."""
+        event_type = event.get("type")
+        payload = event.get("payload", {})
+        created_at = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+
+        event_mapping = {
+            "PullRequestEvent": (f"Новый Pull Request в {parsed_url.geturl()}", "pull_request"),
+            "IssuesEvent": (f"Новый Issue в {parsed_url.geturl()}", "issue"),
+        }
+
+        if event_type not in event_mapping:
+            return None
+
+        description, data_key = event_mapping[event_type]
+        data = payload.get(data_key, {})
+
+        return UpdateEvent(
+            description=description,
+            title=data.get("title", "Без названия"),
+            username=data.get("user", {}).get("login", "Неизвестный пользователь"),
+            created_at=created_at,
+            preview=data.get("body", "Нет описания")[:200],
+        )
+
+    async def check_updates(
+        self,
+        parsed_url: ParseResult,
+        last_check: datetime | None,
+    ) -> UpdateEvent | None:
+        if last_check is None:
+            return None
+
+        repo_info = await self._parse_repo_path(parsed_url)
+        if not repo_info:
+            return None
+
+        owner, repo = repo_info
         events = await self.get_repo_events(owner, repo)
-        if not events:
-            return False
-        if events and isinstance(events, list):
-            latest_event = max(events, key=lambda e: e.get("created_at", "1970-01-01T00:00:00"))
-            latest_event_date = datetime.fromisoformat(
-                latest_event["created_at"].replace("Z", "+00:00"),
-            )
-            return latest_event_date > last_check
-        return False
+        if not events or not isinstance(events, list):
+            return None
+
+        for event in events:
+            created_at = datetime.fromisoformat(event["created_at"])
+            if created_at <= last_check:
+                continue
+
+            update = await self._create_update_event(event, parsed_url)
+            if update:
+                return update
+        return None
