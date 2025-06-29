@@ -48,7 +48,7 @@ class HTTPNotificationService(NotificationService):
                 f"Заголовок: *{update.title}*\n"
                 f"Автор:     {update.username}\n"
                 f"Дата:      {update.created_at:%Y-%m-%d %H:%M}\n"
-                f"Описание:  {update.preview.replace('\n', '\n           ')}\n"
+                f"Описание:  {update.preview}\n"
                 f"{'=' * 50}"
             )
             for update in updates
