@@ -109,7 +109,7 @@ async def db_pool(test_db: dict[str, Any]) -> asyncpg.Pool:
 
 
 @pytest.fixture(autouse=True)
-def mock_redis_asyncio(mocker: MockerFixture):
+def mock_redis_asyncio(mocker: MockerFixture) -> MagicMock:
     mock_redis = MagicMock()
     mock_redis.get = AsyncMock(return_value=None)
     mock_redis.set = AsyncMock()
