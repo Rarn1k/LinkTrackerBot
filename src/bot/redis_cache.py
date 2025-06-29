@@ -1,7 +1,7 @@
 import json
-from typing import Any, Optional
+from typing import Any
 
-import redis
+import redis.asyncio as redis
 
 from src.settings import settings
 
@@ -16,7 +16,7 @@ class RedisCache:
     def __init__(self, url: str) -> None:
         """:param url: URL подключения к Redis."""
         self._url = url
-        self._redis: Optional[Any] = None
+        self._redis: Any | None = None
 
     async def connect(self) -> None:
         """Асинхронно подключается к Redis, если соединение ещё не установлено."""
@@ -27,7 +27,7 @@ class RedisCache:
                 decode_responses=True,
             )  # type: ignore
 
-    async def get_list_cache(self, chat_id: int) -> Optional[list[Any]]:
+    async def get_list_cache(self, chat_id: int) -> list[Any] | None:
         """Получает закэшированный список для заданного chat_id.
 
         :param chat_id: Идентификатор чата.

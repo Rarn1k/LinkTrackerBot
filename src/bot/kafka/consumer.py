@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from confluent_kafka import Consumer, KafkaError, Message, Producer
@@ -29,7 +29,7 @@ class KafkaNotificationReceiver:
         self.dlq_topic = settings.kafka.topic_dlq
         self.producer = Producer({"bootstrap.servers": settings.kafka.bootstrap_servers})
         self._running = False
-        self._task: Optional[asyncio.Task[None]] = None
+        self._task: asyncio.Task[None] | None = None
 
     async def start(self) -> None:
         """Асинхронный запуск Kafka-потока."""
