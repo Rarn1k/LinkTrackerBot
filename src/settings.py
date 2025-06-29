@@ -9,8 +9,8 @@ __all__ = ("TGBotSettings", "settings")
 
 class DatabaseConfig(BaseModel):
     access_type: str = "ORM"
-    orm_url: PostgresDsn
-    sql_url: PostgresDsn
+    orm_url: PostgresDsn = "postgresql+asyncpg://user:pass@localhost/db"  # type: ignore
+    sql_url: PostgresDsn = "postgresql://user:pass@localhost/db"  # type: ignore
     echo: bool = False
     echo_pool: bool = False
     pool_size: int = 50
@@ -19,15 +19,15 @@ class DatabaseConfig(BaseModel):
 
 
 class KafkaConfig(BaseModel):
-    bootstrap_servers: str
-    topic_updates: str
-    topic_digest: str
+    bootstrap_servers: str = "localhost:9092"
+    topic_updates: str = "updates"
+    topic_digest: str = "digest"
     topic_dlq: str = "bot_dlq"
 
 
 class RedisConfig(BaseModel):
-    url: str
-    list_key: str
+    url: str = "redis://localhost:6379/0"
+    list_key: str = "chat_{chat_id}_list"
 
 
 class TGBotSettings(BaseSettings):
@@ -41,9 +41,9 @@ class TGBotSettings(BaseSettings):
     bot_api_url: str = "http://localhost:7777/api/v1/bot"
     tg_api_url: str = "https://api.telegram.org"
 
-    db: DatabaseConfig
-    kafka: KafkaConfig
-    redis: RedisConfig
+    db: DatabaseConfig = DatabaseConfig()
+    kafka: KafkaConfig = KafkaConfig()
+    redis: RedisConfig = RedisConfig()
 
     hour_digest: int = 0
     minute_digest: int = 26
@@ -60,4 +60,4 @@ class TGBotSettings(BaseSettings):
     )
 
 
-settings = TGBotSettings()  # type: ignore[call-arg]
+settings = TGBotSettings()
