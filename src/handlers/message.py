@@ -3,6 +3,7 @@ from pydantic import HttpUrl
 from telethon.events import NewMessage
 
 from src.api.scrapper_api.models import AddLinkRequest
+from src.bot.redis_cache import redis_cache
 from src.db.in_memory.memory_storage.enum_states import State
 from src.db.in_memory.memory_storage.key_builder import build_storage_key
 from src.db.in_memory.memory_storage.memory import MemoryStorage
@@ -17,15 +18,14 @@ async def _send_scrapper_request(
     tags: list[str],
     filters: list[str],
 ) -> None:
-    """
-    Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
+    """Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
 
-    :param event: Событие Telethon с данными Telegram-сообщения.
+    :param event: Событие Telethon C данными Telegram-сообщения.
     :param url: Ссылка, которую необходимо отслеживать.
     :param tags: Список тегов, которые пользователь указал для ссылки.
     :param filters: Список фильтров, применяемых к обновлениям по ссылке.
     :return: None
-    :raises httpx.HTTPStatusError: В случае ошибки HTTP-запроса.
+    :raises httpx.HTTPStatusError: B случае ошибки HTTP-запроса.
     """
     payload = AddLinkRequest(link=HttpUrl(url), tags=tags, filters=filters)
     headers = {"Tg-Chat-Id": str(event.chat_id)}
@@ -104,4 +104,5 @@ async def msg_handler(event: NewMessage.Event) -> None:
             return
 
         await _send_scrapper_request(event, url, data.get("tags", []), filters)
+        await redis_cache.invalidate_list_cache(event.chat_id)
         await memory_storage.clear(key)

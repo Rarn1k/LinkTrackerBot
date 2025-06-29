@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from telethon.events import NewMessage
 
 from src.api.scrapper_api.models import RemoveLinkRequest
+from src.bot.redis_cache import redis_cache
 from src.constants import EXPECTED_TRACK_PARTS
 from src.settings import settings
 
@@ -55,3 +56,4 @@ async def untrack_handler(event: NewMessage.Event) -> None:
                 )
             return
     await event.respond(f"Ссылка {url} удалена из отслеживаемых.")
+    await redis_cache.invalidate_list_cache(event.chat_id)

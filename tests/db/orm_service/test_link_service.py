@@ -22,7 +22,9 @@ def link_service() -> OrmLinkService:
 def sample_add_request() -> AddLinkRequest:
     """Фикстура для создания тестового запроса добавления ссылки."""
     return AddLinkRequest(
-        link=HttpUrl("https://example.com"), tags=["tag1", "tag2"], filters=["filter1"],
+        link=HttpUrl("https://example.com"),
+        tags=["tag1", "tag2"],
+        filters=["filter1"],
     )
 
 
