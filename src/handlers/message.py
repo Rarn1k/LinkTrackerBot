@@ -17,15 +17,14 @@ async def _send_scrapper_request(
     tags: list[str],
     filters: list[str],
 ) -> None:
-    """
-    Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
+    """Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
 
-    :param event: Событие Telethon с данными Telegram-сообщения.
+    :param event: Событие Telethon c данными Telegram-сообщения.
     :param url: Ссылка, которую необходимо отслеживать.
     :param tags: Список тегов, которые пользователь указал для ссылки.
     :param filters: Список фильтров, применяемых к обновлениям по ссылке.
     :return: None
-    :raises httpx.HTTPStatusError: В случае ошибки HTTP-запроса.
+    :raises httpx.HTTPStatusError: B случае ошибки HTTP-запроса.
     """
     payload = AddLinkRequest(link=HttpUrl(url), tags=tags, filters=filters)
     headers = {"Tg-Chat-Id": str(event.chat_id)}
