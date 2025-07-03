@@ -45,6 +45,7 @@ class TGBotSettings(BaseSettings):
     kafka: KafkaConfig = KafkaConfig()
     redis: RedisConfig = RedisConfig()
 
+
     hour_digest: int = 0
     minute_digest: int = 26
 

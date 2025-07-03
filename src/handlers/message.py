@@ -19,8 +19,7 @@ async def _send_scrapper_request(
     filters: list[str],
 ) -> None:
     """Отправляет HTTP-запрос в scrapper API для добавления новой подписки на ссылку.
-
-    :param event: Событие Telethon C данными Telegram-сообщения.
+    :param event: Событие Telethon c данными Telegram-сообщения.
     :param url: Ссылка, которую необходимо отслеживать.
     :param tags: Список тегов, которые пользователь указал для ссылки.
     :param filters: Список фильтров, применяемых к обновлениям по ссылке.
