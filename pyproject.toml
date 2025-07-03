@@ -16,6 +16,8 @@ sqlalchemy = {extras = ["asyncio"], version = "^2.0.39"}
 asyncpg = "^0.30.0"
 alembic = "^1.15.2"
 testcontainers = {extras = ["postgresql"], version = "^4.10.0"}
+confluent-kafka = "^2.10.0"
+redis = "^6.2.0"
 
 [tool.poetry.dev-dependencies]
 black = "^24.8.0"

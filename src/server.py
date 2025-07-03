@@ -17,8 +17,9 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 
 from src.api import router
+from src.bot.kafka.consumer import KafkaNotificationReceiver
 from src.db.db_manager.manager_factory import db_manager
-from src.scheduler.notification.http_notification_service import HTTPNotificationService
+from src.scheduler.notification.factory import NotificationServiceFactory
 from src.scheduler.scheduler_service import Scheduler
 from src.settings import TGBotSettings, settings
 
@@ -34,7 +35,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @asynccontextmanager
 async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
-
     logger.debug("Running application lifespan ...")
 
     try:
@@ -43,8 +43,8 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         logger.exception("Ошибка при инициализации базы данных: %s")
         raise
 
-    notifier = HTTPNotificationService(settings.bot_api_url)
-    scheduler = Scheduler(notification_service=notifier)
+    notification_service = NotificationServiceFactory.create()
+    scheduler = Scheduler(notification_service=notification_service)
     scheduler_task = asyncio.create_task(scheduler.send_digest())
 
     loop = asyncio.get_event_loop()
@@ -63,6 +63,11 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         bot_token=application.settings.token,  # type: ignore[attr-defined]
     )
 
+    kafka_receiver = None
+    if settings.message_transport.upper() == "KAFKA":
+        kafka_receiver = KafkaNotificationReceiver()
+        await kafka_receiver.start()
+
     async with AsyncExitStack() as stack:
         try:
             application.tg_client = await stack.enter_async_context(await client)  # type: ignore[attr-defined]
@@ -72,8 +77,11 @@ async def default_lifespan(application: FastAPI) -> AsyncIterator[None]:
         await db_manager.close()
         await stack.aclose()
 
+        scheduler_task.cancel()
+        if kafka_receiver:
+            await kafka_receiver.stop()
+
     await loop.shutdown_default_executor()
-    scheduler_task.cancel()
 
 
 app = FastAPI(

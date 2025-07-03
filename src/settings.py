@@ -18,6 +18,18 @@ class DatabaseConfig(BaseModel):
     limit_batching: int = 100
 
 
+class KafkaConfig(BaseModel):
+    bootstrap_servers: str = "localhost:9092"
+    topic_updates: str = "updates"
+    topic_digest: str = "digest"
+    topic_dlq: str = "bot_dlq"
+
+
+class RedisConfig(BaseModel):
+    url: str = "redis://localhost:6379/0"
+    list_key: str = "chat_{chat_id}_list"
+
+
 class TGBotSettings(BaseSettings):
     debug: bool = Field(default=False)
 
@@ -30,9 +42,13 @@ class TGBotSettings(BaseSettings):
     tg_api_url: str = "https://api.telegram.org"
 
     db: DatabaseConfig = DatabaseConfig()
+    kafka: KafkaConfig = KafkaConfig()
+    redis: RedisConfig = RedisConfig()
 
     hour_digest: int = 0
     minute_digest: int = 26
+
+    message_transport: str = Field(default="HTTP")
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",

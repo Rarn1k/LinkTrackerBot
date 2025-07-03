@@ -106,3 +106,13 @@ async def db_session(test_db: dict[str, Any]) -> AsyncGenerator[AsyncSession, No
 async def db_pool(test_db: dict[str, Any]) -> asyncpg.Pool:
     """Фикстура для создания сессии для каждого теста."""
     return test_db["pg_pool"]
+
+
+@pytest.fixture(autouse=True)
+def mock_redis_asyncio(mocker: MockerFixture) -> MagicMock:
+    mock_redis = MagicMock()
+    mock_redis.get = AsyncMock(return_value=None)
+    mock_redis.set = AsyncMock()
+    mock_redis.delete = AsyncMock()
+    mocker.patch("redis.asyncio.from_url", AsyncMock(return_value=mock_redis))
+    return mock_redis
