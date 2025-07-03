@@ -120,6 +120,7 @@ async def send_digest(update: DigestUpdate) -> DigestUpdate | JSONResponse:
         payload = {
             "chat_id": update.tg_chat_id,
             "text": f"{update.description}\n" + "\n".join(update.updates),
+            "parse_mode": "Markdown",
         }
         try:
             response = await client.post(telegram_api_url, json=payload)

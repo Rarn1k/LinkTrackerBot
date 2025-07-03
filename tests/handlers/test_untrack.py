@@ -26,7 +26,7 @@ async def test_untrack_handler_success(
     mock_httpx_client.request.assert_called_once_with(
         "DELETE",
         f"{settings.scrapper_api_url}/links",
-        content=RemoveLinkRequest(link=HttpUrl("https://example.com")).model_dump_json(),
+        json=RemoveLinkRequest(link=HttpUrl("https://example.com")).model_dump(mode="json"),
         headers={"Tg-Chat-Id": "123456789"},
     )
     mock_event.respond.assert_called_once_with(expected_response)
@@ -91,7 +91,7 @@ async def test_untrack_handler_http_error(
     mock_httpx_client.request.assert_called_once_with(
         "DELETE",
         f"{settings.scrapper_api_url}/links",
-        content=RemoveLinkRequest(link=HttpUrl("https://example.com")).model_dump_json(),
+        json=RemoveLinkRequest(link=HttpUrl("https://example.com")).model_dump(mode="json"),
         headers={"Tg-Chat-Id": "123456789"},
     )
     mock_event.respond.assert_called_once_with(expected_response)

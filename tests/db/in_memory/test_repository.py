@@ -4,7 +4,7 @@ import pytest
 from pydantic import HttpUrl
 
 from src.api.scrapper_api.models import AddLinkRequest, LinkResponse, RemoveLinkRequest
-from src.bd.repository import Repository
+from src.db.in_memory.repository import Repository
 
 pytestmark = pytest.mark.asyncio
 

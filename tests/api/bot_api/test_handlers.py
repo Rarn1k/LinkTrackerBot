@@ -90,6 +90,7 @@ async def test_send_digest_success(mocker: MockerFixture, test_client: TestClien
         f"{settings.tg_api_url}/bot{settings.token}/sendMessage",
         json={
             "chat_id": 123456789,
+            "parse_mode": "Markdown",
             "text": "Дайджест обновлений\n"
             "Обновление на https://example.com!\n"
             "Обновление на https://another.com!",

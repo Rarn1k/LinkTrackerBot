@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pytest_mock import MockerFixture
 
-from src.bd.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.enum_states import State
 from src.handlers.message import msg_handler
 from src.settings import settings
 
@@ -83,7 +83,7 @@ async def test_waiting_for_filters_success(
     mock_httpx_client.post.assert_called_once_with(
         f"{settings.scrapper_api_url}/links",
         json={
-            "link": "http://example.com",
+            "link": "http://example.com/",
             "tags": ["tag1"],
             "filters": ["key1:value1", "key2:value2"],
         },

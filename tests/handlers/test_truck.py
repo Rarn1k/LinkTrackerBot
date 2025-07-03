@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from pytest_mock import MockerFixture
 
-from src.bd.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.enum_states import State
 from src.handlers.track import track_handler
 
 pytestmark = pytest.mark.asyncio

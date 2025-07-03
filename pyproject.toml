@@ -12,6 +12,10 @@ telethon = "^1.38.1"
 pydantic-settings = "^2.7.1"
 fastapi = "^0.115.8"
 uvicorn = "^0.34.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.39"}
+asyncpg = "^0.30.0"
+alembic = "^1.15.2"
+testcontainers = {extras = ["postgresql"], version = "^4.10.0"}
 
 [tool.poetry.dev-dependencies]
 black = "^24.8.0"

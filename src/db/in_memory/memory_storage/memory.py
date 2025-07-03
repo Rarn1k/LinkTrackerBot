@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, DefaultDict
 
-from src.bd.memory_storage.enum_states import State
+from src.db.in_memory.memory_storage.enum_states import State
 from src.singleton import SingletonMeta
 
 
