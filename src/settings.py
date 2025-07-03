@@ -9,8 +9,8 @@ __all__ = ("TGBotSettings", "settings")
 
 class DatabaseConfig(BaseModel):
     access_type: str = "ORM"
-    orm_url: PostgresDsn
-    sql_url: PostgresDsn
+    orm_url: PostgresDsn = "postgresql+asyncpg://user:pass@localhost/db"  # type: ignore
+    sql_url: PostgresDsn = "postgresql://user:pass@localhost/db"  # type: ignore
     echo: bool = False
     echo_pool: bool = False
     pool_size: int = 50
@@ -29,7 +29,7 @@ class TGBotSettings(BaseSettings):
     bot_api_url: str = "http://localhost:7777/api/v1/bot"
     tg_api_url: str = "https://api.telegram.org"
 
-    db: DatabaseConfig
+    db: DatabaseConfig = DatabaseConfig()
 
     hour_digest: int = 0
     minute_digest: int = 26
@@ -44,4 +44,4 @@ class TGBotSettings(BaseSettings):
     )
 
 
-settings = TGBotSettings()  # type: ignore[call-arg]
+settings = TGBotSettings()
