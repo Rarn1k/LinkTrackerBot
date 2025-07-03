@@ -4,15 +4,20 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-__all__ = ("TGBotSettings",)
+__all__ = ("TGBotSettings", "settings")
 
 
 class TGBotSettings(BaseSettings):
     debug: bool = Field(default=False)
 
-    api_id: int = Field(...)
-    api_hash: str = Field(...)
-    token: str = Field(...)
+    api_id: int = Field(default=12345)
+    api_hash: str = Field(default="default_hash")
+    token: str = Field(default="default_token")
+    scrapper_api_url: str = "http://localhost:7777/api/v1/scrapper"
+    bot_api_url: str = "http://localhost:7777/api/v1/bot"
+    tg_api_url: str = "https://api.telegram.org"
+    hour_digest: int = 23
+    minute_digest: int = 30
 
     model_config: typing.ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",
@@ -21,3 +26,6 @@ class TGBotSettings(BaseSettings):
         env_file=Path(__file__).parent.parent / ".env",
         env_prefix="BOT_",
     )
+
+
+settings = TGBotSettings()  # type: ignore[call-arg]

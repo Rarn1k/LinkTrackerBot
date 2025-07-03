@@ -1,0 +1,211 @@
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, Mock
+from urllib.parse import urlparse
+
+import httpx
+import pytest
+from pytest_mock import MockerFixture
+
+from src.clients.client_settings import ClientSettings
+from src.clients.stack_overflow import StackOverflowClient
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+def settings() -> ClientSettings:
+    """Фикстура для настроек клиентов."""
+    return ClientSettings()
+
+
+@pytest.fixture
+def mock_http_client_ok(mocker: MockerFixture) -> AsyncMock:
+    """Фикстура для успешного HTTP-запроса."""
+    mock_response = Mock()
+    mock_response.status_code = httpx.codes.OK
+    mock_response.json = Mock(
+        return_value={
+            "items": [{"question_id": 123, "last_activity_date": 1709470800}],  # 2024-03-03
+        },
+    )
+    mock_response.raise_for_status = Mock()
+    return mocker.patch.object(
+        httpx.AsyncClient,
+        "get",
+        new=AsyncMock(return_value=mock_response),
+    )
+
+
+@pytest.fixture
+def mock_http_client_not_found(mocker: MockerFixture) -> AsyncMock:
+    """Фикстура для запроса c ошибкой 400 (Bad Request)."""
+    mock_response = Mock()
+    mock_response.status_code = httpx.codes.BAD_REQUEST
+    mock_response.raise_for_status = Mock(
+        side_effect=httpx.HTTPStatusError(
+            message="Bad Request",
+            request=Mock(),
+            response=mock_response,
+        ),
+    )
+    return mocker.patch.object(
+        httpx.AsyncClient,
+        "get",
+        new=AsyncMock(return_value=mock_response),
+    )
+
+
+async def test_get_question_success(
+    mock_http_client_ok: AsyncMock,
+    settings: ClientSettings,
+) -> None:
+    """Успешное получение информации o вопросе."""
+    question_id = "123"
+    client = StackOverflowClient(api_key="test_key", settings=settings)
+
+    question = await client.get_question(question_id)
+
+    assert question == {"question_id": 123, "last_activity_date": 1709470800}
+    mock_http_client_ok.assert_awaited_once_with(
+        f"{client.base_url}/questions/{question_id}",
+        params={"site": "stackoverflow", "key": "test_key"},
+        timeout=client.timeout,
+    )
+
+
+async def test_get_question_no_items(mocker: MockerFixture, settings: ClientSettings) -> None:
+    """Запрос успешен, но items пустой."""
+    question_id = "456"
+    client = StackOverflowClient(settings=settings)
+
+    mock_response = Mock()
+    mock_response.status_code = httpx.codes.OK
+    mock_response.json = Mock(return_value={"items": []})
+    mock_response.raise_for_status = Mock()
+    mock_get = mocker.patch.object(
+        httpx.AsyncClient,
+        "get",
+        new=AsyncMock(return_value=mock_response),
+    )
+
+    question = await client.get_question(question_id)
+
+    assert question is None
+    mock_get.assert_awaited_once_with(
+        f"{client.base_url}/questions/{question_id}",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
+
+
+async def test_get_question_bad_request(
+    mock_http_client_not_found: AsyncMock,
+    settings: ClientSettings,
+) -> None:
+    """Ошибка запроса c кодом 400 (Bad Request)."""
+    question_id = "invalid_id"
+    client = StackOverflowClient(settings=settings)
+
+    with pytest.raises(ValueError, match=f"Некорректный запрос для вопроса {question_id}"):
+        await client.get_question(question_id)
+
+    mock_http_client_not_found.assert_awaited_once_with(
+        f"{client.base_url}/questions/{question_id}",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
+
+
+async def test_get_question_not_found(mocker: MockerFixture, settings: ClientSettings) -> None:
+    """Запрос c кодом 404 возвращает None."""
+    question_id = "789"
+    client = StackOverflowClient(settings=settings)
+
+    mock_response = Mock()
+    mock_response.status_code = httpx.codes.NOT_FOUND
+    mock_response.raise_for_status = Mock(
+        side_effect=httpx.HTTPStatusError(
+            message="Not Found",
+            request=Mock(),
+            response=mock_response,
+        ),
+    )
+    mock_get = mocker.patch.object(
+        httpx.AsyncClient,
+        "get",
+        new=AsyncMock(return_value=mock_response),
+    )
+
+    question = await client.get_question(question_id)
+
+    assert question is None
+    mock_get.assert_awaited_once_with(
+        f"{client.base_url}/questions/{question_id}",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
+
+
+async def test_check_updates_true(mock_http_client_ok: AsyncMock, settings: ClientSettings) -> None:
+    """Есть обновления после последней проверки."""
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/123/")
+    last_check = datetime(2024, 3, 1, 0, 0, 0, tzinfo=timezone.utc)  # 2024-03-01
+    client = StackOverflowClient(settings=settings)
+
+    has_updates = await client.check_updates(parsed_url, last_check)
+
+    assert has_updates is True
+    mock_http_client_ok.assert_awaited_once_with(
+        f"{client.base_url}/questions/123",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
+
+
+async def test_check_updates_false(mocker: MockerFixture, settings: ClientSettings) -> None:
+    """Нет обновлений после последней проверки."""
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/123/")
+    last_check = datetime(2024, 3, 4, 0, 0, 0, tzinfo=timezone.utc)  # 2024-03-04
+    client = StackOverflowClient(settings=settings)
+
+    mock_response = Mock()
+    mock_response.status_code = httpx.codes.OK
+    mock_response.json = Mock(
+        return_value={
+            "items": [{"question_id": 123, "last_activity_date": 1709470800}],  # 2024-03-03
+        },
+    )
+    mock_response.raise_for_status = Mock()
+    mock_get = mocker.patch.object(
+        httpx.AsyncClient,
+        "get",
+        new=AsyncMock(return_value=mock_response),
+    )
+
+    has_updates = await client.check_updates(parsed_url, last_check)
+
+    assert has_updates is False  # last_activity_date: 2024-03-03 < last_check
+    mock_get.assert_awaited_once_with(
+        f"{client.base_url}/questions/123",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
+
+
+async def test_check_updates_no_question(
+    mock_http_client_not_found: AsyncMock,
+    settings: ClientSettings,
+) -> None:
+    """Вопрос не найден, обновлений нет."""
+    parsed_url = urlparse(f"{settings.stackoverflow_api_url}/questions/invalid_id/")
+    last_check = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    client = StackOverflowClient(settings)
+
+    with pytest.raises(ValueError, match="Некорректный запрос для вопроса invalid_id"):
+        await client.check_updates(parsed_url, last_check)
+
+    mock_http_client_not_found.assert_awaited_once_with(
+        f"{client.base_url}/questions/invalid_id",
+        params={"site": "stackoverflow"},
+        timeout=client.timeout,
+    )
